@@ -1,10 +1,12 @@
 const { InstanceBase, Regex, runEntrypoint } = require('@companion-module/base')
 const UpgradeScripts = require('./upgrades');
 const { resolveHostname, isValidIPAddress, parseArguments, evaluateComparison, setupOSC } = require('./helpers.js');
+const variables = require ('./variables');
 
 class OSCInstance extends InstanceBase {
 	constructor(internal) {
 		super(internal)
+		this.variables = {}
 	}
 
 	//Initialization
@@ -48,10 +50,26 @@ class OSCInstance extends InstanceBase {
 		} else {
 			this.updateStatus('ok');
 		}
-
+		this.initVariables(); // init variables
 		this.updateActions(); // export actions
 		this.updateFeedbacks(); // export feedback
 		
+	}
+	initVariables() {
+		this.setVariableDefinitions (variables.getVariableDefinitions())
+		this.updateVariables({
+			status: "init1",
+			volume: "init 2",
+			mute: "init 3"
+		})
+	}
+	updateVariables(data) {
+		for(const [key, value] of Object.entries(data)) {
+		this.variables[key] = value;
+		}
+		if (this.setVariableValues) {
+			this.setVariableValues(this.variables)
+		}
 	}
 	// When module gets deleted
 	async destroy() {
@@ -114,7 +132,6 @@ class OSCInstance extends InstanceBase {
 			this.updateStatus('ok');
 		}
 	}
-
 	// Return config fields for web config
 	getConfigFields() {
 		return [
@@ -145,8 +162,8 @@ class OSCInstance extends InstanceBase {
 			},
 			{
 				type: 'checkbox',
-				id: 'listen',
-				label: 'Listen for Feedback',
+				id: 'polling',
+				label: 'Enable Feedback? If enabled, iPad connection must be turned off on the console.',
 				width: 4,
 				default: false,
 			},
@@ -159,6 +176,12 @@ class OSCInstance extends InstanceBase {
 				isVisible: (options, data) => (options.listen && options.protocol === 'udp'),
 			}
 		]
+	}
+
+	init_polling() {
+		if (this.config.polling == true) {
+			this.sendOSC("/Macros/Buttons/?")
+		};
 	}
 
 	updateActions() {
@@ -232,7 +255,7 @@ class OSCInstance extends InstanceBase {
 				},
 			},
 			send_float: {
-				name: 'Send float',
+				name: 'send float',
 				options: [
 					{
 						type: 'textinput',
@@ -242,10 +265,13 @@ class OSCInstance extends InstanceBase {
 						useVariables: true,
 					},
 					{
-						type: 'textinput',
+						type: 'number',
 						label: 'Value',
 						id: 'float',
-						default: 1,
+						default: 250,
+						min: 20,
+						max: 20000,
+						step: 10,
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 					},
@@ -262,104 +288,8 @@ class OSCInstance extends InstanceBase {
 					])
 				},
 			},
-			send_string: {
-				name: 'Send string',
-				options: [
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-					{
-						type: 'textinput',
-						label: 'Value',
-						id: 'string',
-						default: 'text',
-						useVariables: true,
-					},
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path)
-					const string = await this.parseVariablesInString(event.options.string)
-
-					sendOscMessage(path, [
-						{
-							type: 's',
-							value: '' + string,
-						},
-					])
-				},
-			},
-			send_multiple: {
-				name: 'Send message with multiple arguments',
-				options: [
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-					{
-						type: 'textinput',
-						label: 'Arguments',
-						id: 'arguments',
-						default: '1 "test" 2.5',
-						useVariables: true,
-					},
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path)
-					const argsStr = await this.parseVariablesInString(event.options.arguments)
-
-					const rawArgs = (argsStr + '').replace(/“/g, '"').replace(/”/g, '"').split(' ')
-
-					if (rawArgs.length) {
-						const args = []
-						for (let i = 0; i < rawArgs.length; i++) {
-							if (rawArgs[i].length == 0) continue
-							if (isNaN(rawArgs[i])) {
-								let str = rawArgs[i]
-								if (str.startsWith('"')) {
-									//a quoted string..
-									while (!rawArgs[i].endsWith('"')) {
-										i++
-										str += ' ' + rawArgs[i]
-									}
-								} else if(str.startsWith('{')) {
-									//Probably a JSON object
-									try {
-										args.push((JSON.parse(rawArgs[i])))
-									} catch (error) {
-										this.log('error', `not a JSON object ${rawArgs[i]}`)
-									}
-								}
-
-								args.push({
-									type: 's',
-									value: str.replace(/"/g, '').replace(/'/g, ''),
-								})
-							} else if (rawArgs[i].indexOf('.') > -1) {
-								args.push({
-									type: 'f',
-									value: parseFloat(rawArgs[i]),
-								})
-							} else {
-								args.push({
-									type: 'i',
-									value: parseInt(rawArgs[i]),
-								})
-							}
-						}
-
-						sendOscMessage(path, args)
-					}
-				},
-			},
 			send_boolean: {
-				name: 'Send boolean',
+				name: 'Send Boolean',
 				options: [
 					{
 						type: 'static-text',
@@ -462,6 +392,515 @@ class OSCInstance extends InstanceBase {
 							value: blobBuffer,
 						},
 					]);
+				},
+			},
+			test_eq: {
+				name: 'test eq',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 120,
+						min: 1,
+						max: 120,
+						useVariables: true,
+					},
+					{
+						id:"band",
+						type: 'number',
+						label: 'Band number 1-4',
+						default: 1,
+						min: 1,
+						max: 4,
+						useVariables: true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Freq?',
+						id: 'freqShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'number',
+						label: 'Frequency 20 - 20000',
+						id: 'frequency',
+						default: 250,
+						min: 20,
+						max: 20000,
+						step: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.freqShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit EQ Gain?',
+						id: 'gainShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'number',
+						label: 'gain -18 - 18',
+						id: 'gain',
+						default: 0,
+						min: -18,
+						max: 18,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.gainShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Freq Q?',
+						id: 'qShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'number',
+						label: 'Q 0.1 - 20',
+						id: 'q',
+						default: 0.1,
+						min: 0.1,
+						max: 20,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.qShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Threshold?',
+						id: 'dynThresholdShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Threshold -60 - 0',
+						id: 'threshold',
+						default: 0,
+						min: -60,
+						max: 0,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynThresholdShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Ratio?',
+						id: 'dynRatioShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Ratio 1 - 10',
+						id: 'ratio',
+						default: 1,
+						min: 1,
+						max: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynRatioShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Attack?',
+						id: 'dynAttackShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Attack 0.5 - 100 (ms)',
+						id: 'attack',
+						default: 0.5,
+						min: 0.5,
+						max: 100,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynAttackShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Release?',
+						id: 'dynReleaseShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Release 0.01 - 10',
+						id: 'release',
+						default: 0.01,
+						min: 0.01,
+						max: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynReleaseShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Enable/Disable Dyn EQ?',
+						id: 'dynEnabledShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'dropdown',
+						label: 'Dyn EQ enable/disable',
+						choices: [
+							{ id: 'true', label: 'Enabled' },
+							{ id: 'false', label: 'Disabled' },
+						],
+						id: 'enabled',
+						default: 'false',
+						useVariables: true,
+						isVisible: (options)=>options.dynEnabledShow === true,
+					},
+				],
+				callback: async (event) => {
+					if (event.options.freqShow === true) {
+						const freq_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/frequency'
+						const freq = await this.parseVariablesInString(event.options.frequency)
+						
+						sendOscMessage(freq_path, [
+							{
+								type: 'f',
+								value: parseFloat(freq),
+							},
+						])
+					}
+					if (event.options.gainShow === true) {
+						const gain_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/gain'
+						const gain = await this.parseVariablesInString(event.options.gain)
+						sendOscMessage(gain_path, [
+							{
+								type: 'f',
+								value: parseFloat(gain),
+							},
+						])
+					}
+					if (event.options.qShow === true) {
+						const q_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/q'
+						const q = await this.parseVariablesInString(event.options.q)
+
+						sendOscMessage(q_path, [
+							{
+								type: 'f',
+								value: parseFloat(q),
+							},
+						])
+					}
+					if (event.options.dynThresholdShow === true) {
+						const threshold_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/threshold'
+						const threshold = await this.parseVariablesInString(event.options.threshold)
+
+						sendOscMessage(threshold_path, [
+							{
+								type: 'f',
+								value: parseFloat(threshold),
+							},
+						])
+					}
+					if (event.options.dynRatioShow === true) {
+						const ratio_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/ratio'
+						const ratio = await this.parseVariablesInString(event.options.ratio)
+
+						sendOscMessage(ratio_path, [
+							{
+								type: 'f',
+								value: parseFloat(ratio),
+							},
+						])
+					}
+					if (event.options.dynAttackShow === true) {
+						const attack_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/attack'
+						const attack = await this.parseVariablesInString(event.options.attack / 1000)
+
+						sendOscMessage(attack_path, [
+							{
+								type: 'f',
+								value: parseFloat(attack),
+							},
+						])
+					}
+					if (event.options.dynReleaseShow === true) {
+						const release_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/release'
+						const release = await this.parseVariablesInString(event.options.release)
+
+						sendOscMessage(release_path, [
+							{
+								type: 'f',
+								value: parseFloat(release),
+							},
+						])
+					}
+					if (event.options.dynEnabledShow === true) {
+					const enabled_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/enabled'
+					const enabled = await this.parseVariablesInString(event.options.enabled)
+
+					sendOscMessage(enabled_path, [
+						{
+							type: 's',
+							value: '' + enabled,
+						},
+					])
+					}
+				},
+			},
+			mute_enable: {
+				name: 'Channel Mute',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 0,
+						min: 0,
+						max: 60,
+						useVariables: true,
+					},
+					{
+						type: 'dropdown',
+						label: 'Mute/Unmute',
+						choices: [
+							{ id: 'true', label: 'Mute' },
+							{ id: 'false', label: 'Unmute' },
+						],
+						id: 'string',
+						default: 'true',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/mute'
+					//await this.parseVariablesInString(event.options.path)
+					const string = await this.parseVariablesInString(event.options.string)
+
+					sendOscMessage(path, [
+						{
+							type: 's',
+							value: '' + string,
+						},
+					])
+				},
+			},
+			delay_enable: {
+				name: 'Channel Mute',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 0,
+						min: 0,
+						max: 60,
+						useVariables: true,
+					},
+					{
+						type: 'dropdown',
+						label: 'Mute/Unmute',
+						choices: [
+							{ id: 'true', label: 'Mute' },
+							{ id: 'false', label: 'Unmute' },
+						],
+						id: 'string',
+						default: 'true',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/mute'
+					//await this.parseVariablesInString(event.options.path)
+					const string = await this.parseVariablesInString(event.options.string)
+
+					sendOscMessage(path, [
+						{
+							type: 's',
+							value: '' + string,
+						},
+					])
+				},
+			},
+			mute_enable: {
+				name: 'Channel Mute',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 0,
+						min: 0,
+						max: 60,
+						useVariables: true,
+					},
+					{
+						type: 'dropdown',
+						label: 'Mute/Unmute',
+						choices: [
+							{ id: 'true', label: 'Mute' },
+							{ id: 'false', label: 'Unmute' },
+						],
+						id: 'string',
+						default: 'true',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/mute'
+					//await this.parseVariablesInString(event.options.path)
+					const string = await this.parseVariablesInString(event.options.string)
+
+					sendOscMessage(path, [
+						{
+							type: 's',
+							value: '' + string,
+						},
+					])
+				},
+			},
+			mute_enable: {
+				name: 'Channel Mute',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 0,
+						min: 0,
+						max: 60,
+						useVariables: true,
+					},
+					{
+						type: 'dropdown',
+						label: 'Mute/Unmute',
+						choices: [
+							{ id: 'true', label: 'Mute' },
+							{ id: 'false', label: 'Unmute' },
+						],
+						id: 'string',
+						default: 'true',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/mute'
+					//await this.parseVariablesInString(event.options.path)
+					const string = await this.parseVariablesInString(event.options.string)
+
+					sendOscMessage(path, [
+						{
+							type: 's',
+							value: '' + string,
+						},
+					])
+				},
+			},
+			mute_enable: {
+				name: 'Channel Mute',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 0,
+						min: 0,
+						max: 60,
+						useVariables: true,
+					},
+					{
+						type: 'dropdown',
+						label: 'Mute/Unmute',
+						choices: [
+							{ id: 'true', label: 'Mute' },
+							{ id: 'false', label: 'Unmute' },
+						],
+						id: 'string',
+						default: 'true',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/mute'
+					//await this.parseVariablesInString(event.options.path)
+					const string = await this.parseVariablesInString(event.options.string)
+
+					sendOscMessage(path, [
+						{
+							type: 's',
+							value: '' + string,
+						},
+					])
+				},
+			},
+			send_multiple: {
+				name: 'Send message with multiple arguments',
+				options: [
+					{
+						type: 'textinput',
+						label: 'OSC Path',
+						id: 'path',
+						default: '/osc/path',
+						useVariables: true,
+					},
+					{
+						type: 'textinput',
+						label: 'Arguments',
+						id: 'arguments',
+						default: '1 "test" 2.5',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = await this.parseVariablesInString(event.options.path)
+					const argsStr = await this.parseVariablesInString(event.options.arguments)
+
+					const rawArgs = (argsStr + '').replace(/“/g, '"').replace(/”/g, '"').split(' ')
+
+					if (rawArgs.length) {
+						const args = []
+						for (let i = 0; i < rawArgs.length; i++) {
+							if (rawArgs[i].length == 0) continue
+							if (isNaN(rawArgs[i])) {
+								let str = rawArgs[i]
+								if (str.startsWith('"')) {
+									//a quoted string..
+									while (!rawArgs[i].endsWith('"')) {
+										i++
+										str += ' ' + rawArgs[i]
+									}
+								} else if(str.startsWith('{')) {
+									//Probably a JSON object
+									try {
+										args.push((JSON.parse(rawArgs[i])))
+									} catch (error) {
+										this.log('error', `not a JSON object ${rawArgs[i]}`)
+									}
+								}
+
+								args.push({
+									type: 's',
+									value: str.replace(/"/g, '').replace(/'/g, ''),
+								})
+							} else if (rawArgs[i].indexOf('.') > -1) {
+								args.push({
+									type: 'f',
+									value: parseFloat(rawArgs[i]),
+								})
+							} else {
+								args.push({
+									type: 'i',
+									value: parseInt(rawArgs[i]),
+								})
+							}
+						}
+
+						sendOscMessage(path, args)
+					}
 				},
 			},
 		})
@@ -744,4 +1183,4 @@ class OSCInstance extends InstanceBase {
 	
 }
 
-runEntrypoint(OSCInstance, UpgradeScripts)
+runEntrypoint(OSCInstance, UpgradeScripts);

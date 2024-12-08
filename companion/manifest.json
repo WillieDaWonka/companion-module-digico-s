@@ -1,26 +1,26 @@
 {
-	"id": "generic-osc",
-	"name": "generic-osc",
-	"shortname": "osc",
-	"description": "Direct: OSC plugin for Companion",
+	"id": "digico-s",
+	"name": "digico-s",
+	"shortname": "digico_s",
+	"description": "Updated Digico S-Series module for Companion",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-generic-osc.git",
-	"bugs": "https://github.com/bitfocus/companion-module-generic-osc/issues",
+	"repository": "git+https://github.com/WillieDaWonka/Digico_S.git",
+	"bugs": "https://github.com/WillieDaWonka/Digico_S/issues",
 	"maintainers": [
 		{
-			"name": "William Viker",
-			"email": "william@bitfocus.io"
+			"name": "William Loo",
+			"email": "williaml@harrythehirer.com.au"
 		}
 	],
-	"legacyIds": ["direct_osc", "osc"],
+	"legacyIds": ["digico_s", "digicos"],
 	"runtime": {
 		"type": "node18",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
 		"entrypoint": "../osc.js"
 	},
-	"manufacturer": "Generic",
-	"products": ["OSC"],
-	"keywords": ["Protocol", "Generic"]
+	"manufacturer": "Digico",
+	"products": ["S Series"],
+	"keywords": ["Digico", "Audio", "Console", "AV", "OSC"]
 }
