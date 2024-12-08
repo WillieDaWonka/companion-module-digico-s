@@ -5,15 +5,15 @@
 	"description": "Updated Digico S-Series module for Companion",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/WillieDaWonka/Digico_S.git",
-	"bugs": "https://github.com/WillieDaWonka/Digico_S/issues",
+	"repository": "git+https://github.com/WillieDaWonka/companion-module-digico-s.git",
+	"bugs": "https://github.com/WillieDaWonka/companion-module-digico-s/issues",
 	"maintainers": [
 		{
 			"name": "William Loo",
 			"email": "williaml@harrythehirer.com.au"
 		}
 	],
-	"legacyIds": ["digico_s", "digicos"],
+	"legacyIds": ["generic-osc"],
 	"runtime": {
 		"type": "node18",
 		"api": "nodejs-ipc",

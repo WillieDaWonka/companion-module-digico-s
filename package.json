@@ -9,7 +9,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/WillieDaWonka/companion-module-generic-osc.git"
+		"url": "git+https://github.com/WillieDaWonka/companion-module-digico-s.git"
 	},
 	"dependencies": {
 		"@companion-module/base": "^1.11.0",
