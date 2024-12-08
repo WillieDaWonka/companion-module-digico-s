@@ -57,20 +57,24 @@ class OSCInstance extends InstanceBase {
 	}
 	initVariables() {
 		this.setVariableDefinitions (variables.getVariableDefinitions())
-		this.updateVariables({
-			status: "init1",
-			volume: "init 2",
-			mute: "init 3"
-		})
 	}
 	updateVariables(data) {
 		for(const [key, value] of Object.entries(data)) {
-		this.variables[key] = value;
+			this.variables[key] = value;
 		}
 		if (this.setVariableValues) {
 			this.setVariableValues(this.variables)
 		}
 	}
+
+	handleIncomingData(channel, path, value) {
+		variables.updateVariables(this, channel, path, value);
+	}
+
+	handleIncomingChannelData(channel, data) {
+		variables.updateChannelVariables(this, channel, data);
+	}
+
 	// When module gets deleted
 	async destroy() {
 		this.log('debug', 'destroy')
@@ -573,6 +577,8 @@ class OSCInstance extends InstanceBase {
 								value: parseFloat(freq),
 							},
 						])
+						this.handleIncomingData(event.options.channel, 'eq/' + event.options.band + '/frequency', freq)
+
 					}
 					if (event.options.gainShow === true) {
 						const gain_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/gain'
