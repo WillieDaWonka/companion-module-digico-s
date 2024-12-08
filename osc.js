@@ -184,7 +184,7 @@ class OSCInstance extends InstanceBase {
 
 	init_polling() {
 		if (this.config.polling == true) {
-			this.sendOSC("/Macros/Buttons/?")
+			this.sendOSC("/console/resend")
 		};
 	}
 
@@ -210,194 +210,6 @@ class OSCInstance extends InstanceBase {
 		}
 
 		this.setActionDefinitions({
-			send_blank: {
-				name: 'Send message without arguments',
-				options: [
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path)
-
-					sendOscMessage(path, [])
-				},
-			},
-			send_int: {
-				name: 'Send integer',
-				options: [
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-					{
-						type: 'textinput',
-						label: 'Value',
-						id: 'int',
-						default: 1,
-						regex: Regex.SIGNED_NUMBER,
-						useVariables: true,
-					},
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path)
-					const int = await this.parseVariablesInString(event.options.int)
-
-					sendOscMessage(path, [
-						{
-							type: 'i',
-							value: parseInt(int),
-						},
-					])
-				},
-			},
-			send_float: {
-				name: 'send float',
-				options: [
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-					{
-						type: 'number',
-						label: 'Value',
-						id: 'float',
-						default: 250,
-						min: 20,
-						max: 20000,
-						step: 10,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-					},
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path)
-					const float = await this.parseVariablesInString(event.options.float)
-
-					sendOscMessage(path, [
-						{
-							type: 'f',
-							value: parseFloat(float),
-						},
-					])
-				},
-			},
-			send_boolean: {
-				name: 'Send Boolean',
-				options: [
-					{
-						type: 'static-text',
-						label: 'Attention',
-						value: 'The boolean type is non-standard and may only work with some receivers.',
-						id: 'warning'
-					},
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Value',
-						id: 'value',
-						default: false,
-					},
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path)
-					let type = 'F'
-					if (event.options.value === true) {
-						type = 'T'
-					}
-
-					sendOscMessage(path, [
-						{
-							type,
-						},
-					])
-				},
-			},
-			send_blob: {
-				name: 'Send blob',
-				options: [
-					{
-						type: 'static-text',
-						label: 'Attention',
-						value: 'The blob type is non-standard and may only work with some receivers.',
-						id: 'warning'
-					},
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-					{
-						type: 'textinput',
-						label: 'Blob Data (Base64)',
-						id: 'blob',
-						default: '',
-						useVariables: true,
-						isVisible: (options, data) => (options.hexswitch === false),
-					},
-					{
-						type: 'textinput',
-						label: 'Blob Data (Hex)',
-						id: 'blob_hex',
-						default: '',
-						useVariables: true,
-						isVisible: (options, data) => (options.hexswitch === true),
-					},
-					{
-						type: 'checkbox',
-						label: 'Use Hex',
-						id: 'hexswitch',
-						default: false,
-					},
-
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path);
-					const blob = await this.parseVariablesInString(event.options.blob);
-					
-					let blobBuffer;
-					
-					if (event.options.hexswitch === true) {
-						// Convert Hex string to a Buffer
-						blobBuffer = Buffer.from(blob, 'hex');
-
-					} else {
-						// Convert Base64 string to a Buffer
-						blobBuffer = Buffer.from(blob, 'base64');
-
-					}
-	
-					if (!blobBuffer) {
-						this.log('error', `Invalid blob data: ${blob}`);
-						return;
-					}
-					
-					sendOscMessage(path, [
-						{
-							type: 'b',  // OSC blob type
-							value: blobBuffer,
-						},
-					]);
-				},
-			},
 			test_eq: {
 				name: 'test eq',
 				options: [
@@ -655,6 +467,673 @@ class OSCInstance extends InstanceBase {
 							value: '' + enabled,
 						},
 					])
+					}
+				},
+			},
+			dyn1: {
+				name: 'Channel Dynamics 1',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 120,
+						min: 1,
+						max: 120,
+						useVariables: true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Enable/Disable Dyn1?',
+						id: 'dynShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dynamics Type?',
+						id: 'typeShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Type 1 - 2',
+						id: 'type',
+						default: 1,
+						min: 1,
+						max: 2,
+						regex: Regex.SIGNED_NUMBER,
+						useVariables: true,
+						isVisible: (options)=>options.typeShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Sidechain LowPass Freq?',
+						id: 'lpfreqShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Frequency 20 - 20000',
+						id: 'lpfrequency',
+						default: 10000,
+						min: 20,
+						max: 20000,
+						step: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.lpfreqShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Sidechain HighPassFreq?',
+						id: 'hpfreqShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Frequency 20 - 20000',
+						id: 'hpfrequency',
+						default: 120,
+						min: 20,
+						max: 20000,
+						step: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.hpfreqShow === true && options.dynShow === true,
+					},
+					{
+						id:"band",
+						type: 'number',
+						label: 'Band number 1-3',
+						default: 1,
+						min: 1,
+						max: 3,
+						useVariables: true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Threshold?',
+						id: 'dynThresholdShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Band Threshold 1 - 50',
+						id: 'threshold',
+						default: 1,
+						min: 1,
+						max: 50,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynThresholdShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Ratio?',
+						id: 'dynRatioShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Band Ratio 1 - 50',
+						id: 'ratio',
+						default: 1,
+						min: 1,
+						max: 50,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynRatioShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Gain?',
+						id: 'gainShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Band Gain 0 - 40',
+						id: 'gain',
+						default: 0,
+						min: 0,
+						max: 40,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.gainShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Attack?',
+						id: 'dynAttackShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Band Attack 0.5 - 100 (ms)',
+						id: 'attack',
+						default: 0.5,
+						min: 0.5,
+						max: 100,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynAttackShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Release?',
+						id: 'dynReleaseShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Release 5 - 10ms',
+						id: 'release',
+						default: 0.005,
+						min: 0.005,
+						max: 0.1,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynReleaseShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Knee?',
+						id: 'kneeShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Knee TBC - TBD',
+						id: 'knee',
+						default: 1,
+						min: 1,
+						max: 3,
+						regex: Regex.SIGNED_NUMBER,
+						useVariables: true,
+						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
+					},
+				],
+				callback: async (event) => {
+					if (event.options.dynShow === false) {
+						const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
+						const enabled = await this.parseVariablesInString(event.options.dynShow)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: enabled,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
+
+					}
+						if (event.options.dynShow === true) {
+							const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
+							const enabled = await this.parseVariablesInString(event.options.dynShow)
+							
+							sendOscMessage(path, [
+								{
+									type: 's',
+									value: enabled,
+								},
+							])
+							this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
+	
+					}
+					if (event.options.typeShow === true) {
+						const path = '/channel/'+ event.options.channel + '/dyn1/mode'
+						const type = await this.parseVariablesInString(event.options.type)
+
+						sendOscMessage(path, [
+							{
+								type: 'i',
+								value: parseInt(type),
+							},
+						])
+					}
+					if (event.options.lpfreqShow === true) {
+						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_low'
+						const freq = await this.parseVariablesInString(event.options.lpfrequency)
+						
+						sendOscMessage(freq_path, [
+							{
+								type: 'f',
+								value: parseFloat(freq),
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_low', freq)
+
+					}
+					if (event.options.hpfreqShow === true) {
+						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_high'
+						const freq = await this.parseVariablesInString(event.options.hpfrequency)
+						
+						sendOscMessage(freq_path, [
+							{
+								type: 'f',
+								value: parseFloat(freq),
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_high', freq)
+
+					}
+					if (event.options.dynThresholdShow === true) {
+						const threshold_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/threshold'
+						const threshold = await this.parseVariablesInString(event.options.threshold)
+
+						sendOscMessage(threshold_path, [
+							{
+								type: 'f',
+								value: parseFloat(threshold),
+							},
+						])
+					}
+					if (event.options.dynRatioShow === true) {
+						const ratio_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/ratio'
+						const ratio = await this.parseVariablesInString(event.options.ratio)
+
+						sendOscMessage(ratio_path, [
+							{
+								type: 'f',
+								value: parseFloat(ratio),
+							},
+						])
+					}
+					if (event.options.gainShow === true) {
+						const gain_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/gain'
+						const gain = await this.parseVariablesInString(event.options.gain)
+						sendOscMessage(gain_path, [
+							{
+								type: 'f',
+								value: parseFloat(gain),
+							},
+						])
+					}
+					if (event.options.dynAttackShow === true) {
+						const attack_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/attack'
+						const attack = await this.parseVariablesInString(event.options.attack / 1000)
+
+						sendOscMessage(attack_path, [
+							{
+								type: 'f',
+								value: parseFloat(attack),
+							},
+						])
+					}
+					if (event.options.dynReleaseShow === true) {
+						const release_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/release'
+						const release = await this.parseVariablesInString(event.options.release / 100)
+
+						sendOscMessage(release_path, [
+							{
+								type: 'f',
+								value: parseFloat(release),
+							},
+						])
+					}
+					if (event.options.kneeShow === true) {
+						const knee_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/knee'
+						const knee = await this.parseVariablesInString(event.options.knee)
+
+						sendOscMessage(knee_path, [
+							{
+								type: 'i',
+								value: parseInt(knee),
+							},
+						])
+					}
+				},
+			},
+			// THIS WORKING ON THIS BIT. Copy pasted from Dyn1
+			dyn2: {
+				name: 'Channel Dynamics 2',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 120,
+						min: 1,
+						max: 120,
+						useVariables: true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Enable/Disable Dyn1?',
+						id: 'dynShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dynamics Type?',
+						id: 'typeShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Type 1 - 2',
+						id: 'type',
+						default: 1,
+						min: 1,
+						max: 2,
+						regex: Regex.SIGNED_NUMBER,
+						useVariables: true,
+						isVisible: (options)=>options.typeShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Sidechain LowPass Freq?',
+						id: 'lpfreqShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Frequency 20 - 20000',
+						id: 'lpfrequency',
+						default: 10000,
+						min: 20,
+						max: 20000,
+						step: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.lpfreqShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Sidechain HighPassFreq?',
+						id: 'hpfreqShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Frequency 20 - 20000',
+						id: 'hpfrequency',
+						default: 120,
+						min: 20,
+						max: 20000,
+						step: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.hpfreqShow === true && options.dynShow === true,
+					},
+					{
+						id:"band",
+						type: 'number',
+						label: 'Band number 1-3',
+						default: 1,
+						min: 1,
+						max: 3,
+						useVariables: true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Threshold?',
+						id: 'dynThresholdShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Band Threshold 1 - 50',
+						id: 'threshold',
+						default: 1,
+						min: 1,
+						max: 50,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynThresholdShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Ratio?',
+						id: 'dynRatioShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Band Ratio 1 - 50',
+						id: 'ratio',
+						default: 1,
+						min: 1,
+						max: 50,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynRatioShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Gain?',
+						id: 'gainShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Band Gain 0 - 40',
+						id: 'gain',
+						default: 0,
+						min: 0,
+						max: 40,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.gainShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Attack?',
+						id: 'dynAttackShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Band Attack 0.5 - 100 (ms)',
+						id: 'attack',
+						default: 0.5,
+						min: 0.5,
+						max: 100,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynAttackShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Release?',
+						id: 'dynReleaseShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Release 5 - 10ms',
+						id: 'release',
+						default: 0.005,
+						min: 0.005,
+						max: 0.1,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynReleaseShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Band Knee?',
+						id: 'kneeShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Knee TBC - TBD',
+						id: 'knee',
+						default: 1,
+						min: 1,
+						max: 3,
+						regex: Regex.SIGNED_NUMBER,
+						useVariables: true,
+						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
+					},
+				],
+				callback: async (event) => {
+					if (event.options.dynShow === false) {
+						const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
+						const enabled = await this.parseVariablesInString(event.options.dynShow)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: enabled,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
+
+					}
+						if (event.options.dynShow === true) {
+							const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
+							const enabled = await this.parseVariablesInString(event.options.dynShow)
+							
+							sendOscMessage(path, [
+								{
+									type: 's',
+									value: enabled,
+								},
+							])
+							this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
+	
+					}
+					if (event.options.typeShow === true) {
+						const path = '/channel/'+ event.options.channel + '/dyn1/mode'
+						const type = await this.parseVariablesInString(event.options.type)
+
+						sendOscMessage(path, [
+							{
+								type: 'i',
+								value: parseInt(type),
+							},
+						])
+					}
+					if (event.options.lpfreqShow === true) {
+						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_low'
+						const freq = await this.parseVariablesInString(event.options.lpfrequency)
+						
+						sendOscMessage(freq_path, [
+							{
+								type: 'f',
+								value: parseFloat(freq),
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_low', freq)
+
+					}
+					if (event.options.hpfreqShow === true) {
+						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_high'
+						const freq = await this.parseVariablesInString(event.options.hpfrequency)
+						
+						sendOscMessage(freq_path, [
+							{
+								type: 'f',
+								value: parseFloat(freq),
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_high', freq)
+
+					}
+					if (event.options.dynThresholdShow === true) {
+						const threshold_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/threshold'
+						const threshold = await this.parseVariablesInString(event.options.threshold)
+
+						sendOscMessage(threshold_path, [
+							{
+								type: 'f',
+								value: parseFloat(threshold),
+							},
+						])
+					}
+					if (event.options.dynRatioShow === true) {
+						const ratio_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/ratio'
+						const ratio = await this.parseVariablesInString(event.options.ratio)
+
+						sendOscMessage(ratio_path, [
+							{
+								type: 'f',
+								value: parseFloat(ratio),
+							},
+						])
+					}
+					if (event.options.gainShow === true) {
+						const gain_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/gain'
+						const gain = await this.parseVariablesInString(event.options.gain)
+						sendOscMessage(gain_path, [
+							{
+								type: 'f',
+								value: parseFloat(gain),
+							},
+						])
+					}
+					if (event.options.dynAttackShow === true) {
+						const attack_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/attack'
+						const attack = await this.parseVariablesInString(event.options.attack / 1000)
+
+						sendOscMessage(attack_path, [
+							{
+								type: 'f',
+								value: parseFloat(attack),
+							},
+						])
+					}
+					if (event.options.dynReleaseShow === true) {
+						const release_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/release'
+						const release = await this.parseVariablesInString(event.options.release / 100)
+
+						sendOscMessage(release_path, [
+							{
+								type: 'f',
+								value: parseFloat(release),
+							},
+						])
+					}
+					if (event.options.kneeShow === true) {
+						const knee_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/knee'
+						const knee = await this.parseVariablesInString(event.options.knee)
+
+						sendOscMessage(knee_path, [
+							{
+								type: 'i',
+								value: parseInt(knee),
+							},
+						])
 					}
 				},
 			},
