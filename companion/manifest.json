@@ -10,7 +10,10 @@
 	"maintainers": [
 		{
 			"name": "William Loo",
-			"email": "williaml@harrythehirer.com.au"
+			"email": "williaml@harrythehirer.com.au",
+			
+			"name": "George Haviaridis",
+			"email": "sample@sample.com"
 		}
 	],
 	"legacyIds": ["generic-osc"],

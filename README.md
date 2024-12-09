@@ -1,3 +1,48 @@
-# companion-module-generic-osc
+# companion-module-digico-s
 
 See HELP.md and LICENSE
+
+Experimental module for Digico's S-Series consoles
+
+Available features:
+Channel EQ
+    Enabled
+    Highpass Frequency
+    Highpass Enabled
+    Lowpass Frequency
+    Lowpass Enabled
+    Band Frequency
+    Band Gain
+    Band Q
+    Band Dynamic Threshold
+    Band Dynamic Ratio
+    Band Dynamic Attack
+    Band Dynamic Release
+    Band Dynamic Enabled
+Channel Dyn1
+    Enabled
+    Mode
+    Sidechain Lowpass Filter
+    Sidechain Highpass Filter
+    Threshold
+    Ratio
+    Gain
+    Attack
+    Release
+    Knee
+Channel Dyn2
+    Enabled
+    Mode
+    Gain
+    Threshold
+    Range
+    Ratio
+    Attack
+    Hold
+    Release
+    Knee
+    Lowpass Filter
+    Highpass Filter
+
+Upcoming:
+    Channel Head Amp Control

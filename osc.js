@@ -36,7 +36,7 @@ class OSCInstance extends InstanceBase {
 				validate = true;
 			}
 		}
-
+		// Need to add "/console/ping" with no arg and await reply via sending "/console/pong" with no args -WL
 		if (this.config.listen) {
 			if (this.targetHost && (this.config.targetPort || this.config.feedbackPort)) {
 
@@ -50,10 +50,10 @@ class OSCInstance extends InstanceBase {
 		} else {
 			this.updateStatus('ok');
 		}
-		//this.initVariables(); // init variables // commented ouit for dynamic variables
+		//this.initVariables(); // init variables // commented out for dynamic variables
 		this.updateActions(); // export actions
 		this.updateFeedbacks(); // export feedback
-		
+
 	}
 	initVariables() {
 		this.setVariableDefinitions (variables.getVariableDefinitions())
@@ -167,7 +167,8 @@ class OSCInstance extends InstanceBase {
 			{
 				type: 'checkbox',
 				id: 'polling',
-				label: 'Enable Feedback? If enabled, iPad connection must be turned off on the console.',
+				//Rewording
+				label: 'Enable Feedback? This may cause network errors between Companion and console',
 				width: 4,
 				default: false,
 			},
@@ -181,7 +182,7 @@ class OSCInstance extends InstanceBase {
 			}
 		]
 	}
-
+	// In theory, this pulls all data from console, but should only be used if 'option.polling === true' -WL
 	init_polling() {
 		if (this.config.polling == true) {
 			this.sendOSC("/console/resend")
@@ -260,8 +261,9 @@ class OSCInstance extends InstanceBase {
 		}
 
 		this.setActionDefinitions({
-			test_eq: {
-				name: 'test eq',
+			//Word change from "test eq"
+			eq: {
+				name: 'Channel EQ',
 				options: [
 					{
 						id:"channel",
@@ -474,7 +476,7 @@ class OSCInstance extends InstanceBase {
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						default: 120,
+						default: 1,
 						min: 1,
 						max: 120,
 						useVariables: true,
@@ -548,7 +550,7 @@ class OSCInstance extends InstanceBase {
 					{
 						id:"band",
 						type: 'multidropdown',
-						label: 'Band number 1-4',
+						label: 'Band number 1-3',
 						choices: [
 							{ id: '1', label: '1' },
 							{ id: '2', label: '2' },
@@ -556,6 +558,7 @@ class OSCInstance extends InstanceBase {
 						],
 						default: ['1','2','3'],
 						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
 					},
 					{
 						type: 'checkbox',
@@ -708,7 +711,7 @@ class OSCInstance extends InstanceBase {
 					}
 				},
 			},
-			// THIS WORKING ON THIS BIT. Copy pasted from Dyn1
+			// Followed dyn1 but am unsure if syntax used is correct -WL
 			dyn2: {
 				name: 'Channel Dynamics 2',
 				options: [
@@ -716,14 +719,15 @@ class OSCInstance extends InstanceBase {
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						default: 120,
+						// Replaced with 1 for ease of use
+						default: 1,
 						min: 1,
 						max: 120,
 						useVariables: true,
 					},
 					{
 						type: 'checkbox',
-						label: 'Enable/Disable Dyn1?',
+						label: 'Enable/Disable Dyn2?',
 						id: 'dynShow',
 						default: false,
 						useVariables: true,
@@ -746,6 +750,158 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
 						isVisible: (options)=>options.typeShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Gain?',
+						id: 'gainShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Gain 0 - 40',
+						id: 'gain',
+						default: 0,
+						min: 0,
+						max: 40,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.gainShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Threshold?',
+						id: 'dynThresholdShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Threshold 1 - 50',
+						id: 'threshold',
+						default: 1,
+						min: 1,
+						max: 50,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynThresholdShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Range?',
+						id: 'dynRangeShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Range -90 - 0',
+						id: 'range',
+						default: 0,
+						min: -90,
+						max: 0,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynRangeShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Ratio?',
+						id: 'dynRatioShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Ratio 1 - 50',
+						id: 'ratio',
+						default: 1,
+						min: 1,
+						max: 50,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynRatioShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Attack?',
+						id: 'dynAttackShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Attack 0.5 - 100 (ms)',
+						id: 'attack',
+						default: 0.5,
+						min: 0.5,
+						max: 100,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynAttackShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Hold?',
+						id: 'dynHoldShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Hold 2 - 2000ms (2s)',
+						id: 'hold',
+						default: 500,
+						min: 0.002,
+						max: 2,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynHoldShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Release?',
+						id: 'dynReleaseShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Release 5 - 10ms',
+						id: 'release',
+						default: 0.005,
+						min: 0.005,
+						max: 0.1,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynReleaseShow === true && options.dynShow === true,
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Knee?',
+						id: 'kneeShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn Knee TBC - TBD',
+						id: 'knee',
+						default: 1,
+						min: 1,
+						max: 3,
+						regex: Regex.SIGNED_NUMBER,
+						useVariables: true,
+						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
 					},
 					{
 						type: 'checkbox',
@@ -787,258 +943,48 @@ class OSCInstance extends InstanceBase {
 						useVariables: true,
 						isVisible: (options)=>options.hpfreqShow === true && options.dynShow === true,
 					},
-					{
-						id:"band",
-						type: 'number',
-						label: 'Band number 1-3',
-						default: 1,
-						min: 1,
-						max: 3,
-						useVariables: true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Band Threshold?',
-						id: 'dynThresholdShow',
-						default: false,
-						useVariables: true,
-						isVisible: (options)=>options.dynShow === true,
-					},
-					{
-						type: 'number',
-						label: 'Band Threshold 1 - 50',
-						id: 'threshold',
-						default: 1,
-						min: 1,
-						max: 50,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynThresholdShow === true && options.dynShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Band Ratio?',
-						id: 'dynRatioShow',
-						default: false,
-						useVariables: true,
-						isVisible: (options)=>options.dynShow === true,
-					},
-					{
-						type: 'number',
-						label: 'Band Ratio 1 - 50',
-						id: 'ratio',
-						default: 1,
-						min: 1,
-						max: 50,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynRatioShow === true && options.dynShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Band Gain?',
-						id: 'gainShow',
-						default: false,
-						useVariables: true,
-						isVisible: (options)=>options.dynShow === true,
-					},
-					{
-						type: 'number',
-						label: 'Band Gain 0 - 40',
-						id: 'gain',
-						default: 0,
-						min: 0,
-						max: 40,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.gainShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Band Attack?',
-						id: 'dynAttackShow',
-						default: false,
-						useVariables: true,
-						isVisible: (options)=>options.dynShow === true,
-					},
-					{
-						type: 'number',
-						label: 'Dyn Band Attack 0.5 - 100 (ms)',
-						id: 'attack',
-						default: 0.5,
-						min: 0.5,
-						max: 100,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynAttackShow === true && options.dynShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Band Release?',
-						id: 'dynReleaseShow',
-						default: false,
-						useVariables: true,
-						isVisible: (options)=>options.dynShow === true,
-					},
-					{
-						type: 'number',
-						label: 'Dyn Release 5 - 10ms',
-						id: 'release',
-						default: 0.005,
-						min: 0.005,
-						max: 0.1,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynReleaseShow === true && options.dynShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Band Knee?',
-						id: 'kneeShow',
-						default: false,
-						useVariables: true,
-						isVisible: (options)=>options.dynShow === true,
-					},
-					{
-						type: 'number',
-						label: 'Dyn Knee TBC - TBD',
-						id: 'knee',
-						default: 1,
-						min: 1,
-						max: 3,
-						regex: Regex.SIGNED_NUMBER,
-						useVariables: true,
-						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
-					},
 				],
+				// Replaced '1' with '2' to reflect dyn2
 				callback: async (event) => {
 					if (event.options.dynShow === false) {
-						const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
-						const enabled = await this.parseVariablesInString(event.options.dynShow)
-						
-						sendOscMessage(path, [
-							{
-								type: 's',
-								value: enabled,
-							},
-						])
-						this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
-
+						await sendOscDynMessages(event.options.channel, 2, 'enabled', 'false', 's');
 					}
-						if (event.options.dynShow === true) {
-							const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
-							const enabled = await this.parseVariablesInString(event.options.dynShow)
-							
-							sendOscMessage(path, [
-								{
-									type: 's',
-									value: enabled,
-								},
-							])
-							this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
-	
+					if (event.options.dynShow === true) {
+						await sendOscDynMessages(event.options.channel, 2, 'enabled', 'true', 's');
 					}
 					if (event.options.typeShow === true) {
-						const path = '/channel/'+ event.options.channel + '/dyn1/mode'
-						const type = await this.parseVariablesInString(event.options.type)
-
-						sendOscMessage(path, [
-							{
-								type: 'i',
-								value: parseInt(type),
-							},
-						])
-					}
-					if (event.options.lpfreqShow === true) {
-						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_low'
-						const freq = await this.parseVariablesInString(event.options.lpfrequency)
-						
-						sendOscMessage(freq_path, [
-							{
-								type: 'f',
-								value: parseFloat(freq),
-							},
-						])
-						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_low', freq)
-
-					}
-					if (event.options.hpfreqShow === true) {
-						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_high'
-						const freq = await this.parseVariablesInString(event.options.hpfrequency)
-						
-						sendOscMessage(freq_path, [
-							{
-								type: 'f',
-								value: parseFloat(freq),
-							},
-						])
-						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_high', freq)
-
-					}
-					if (event.options.dynThresholdShow === true) {
-						const threshold_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/threshold'
-						const threshold = await this.parseVariablesInString(event.options.threshold)
-
-						sendOscMessage(threshold_path, [
-							{
-								type: 'f',
-								value: parseFloat(threshold),
-							},
-						])
-					}
-					if (event.options.dynRatioShow === true) {
-						const ratio_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/ratio'
-						const ratio = await this.parseVariablesInString(event.options.ratio)
-
-						sendOscMessage(ratio_path, [
-							{
-								type: 'f',
-								value: parseFloat(ratio),
-							},
-						])
+						await sendOscDynMessages(event.options.channel, 2, 'mode', event.options.type, 'i');
 					}
 					if (event.options.gainShow === true) {
-						const gain_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/gain'
-						const gain = await this.parseVariablesInString(event.options.gain)
-						sendOscMessage(gain_path, [
-							{
-								type: 'f',
-								value: parseFloat(gain),
-							},
-						])
+						await sendOscDynMessages(event.options.channel, 2, 'gain', event.options.gain);
+					}
+					if (event.options.dynThresholdShow === true) {
+						await sendOscDynMessages(event.options.channel, 2, 'threshold', event.options.threshold);
+					}
+					if (event.options.dynRangeShow === true) {
+						await sendOscDynMessages(event.options.channel, 2, 'range', event.options.range);
+					}
+					if (event.options.dynRatioShow === true) {
+						await sendOscDynMessages(event.options.channel, 2, 'ratio', event.options.ratio);
 					}
 					if (event.options.dynAttackShow === true) {
-						const attack_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/attack'
-						const attack = await this.parseVariablesInString(event.options.attack / 1000)
-
-						sendOscMessage(attack_path, [
-							{
-								type: 'f',
-								value: parseFloat(attack),
-							},
-						])
+						await sendOscDynMessages(event.options.channel, 2, 'attack', event.options.attack / 1000);
+					}
+					if (event.options.dynHoldShow === true) {
+						// Thanks Digico for using seconds here instead of miliseconds
+						await sendOscDynMessages(event.options.channel, 2, 'hold', event.options.hold * 1000);
 					}
 					if (event.options.dynReleaseShow === true) {
-						const release_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/release'
-						const release = await this.parseVariablesInString(event.options.release / 100)
-
-						sendOscMessage(release_path, [
-							{
-								type: 'f',
-								value: parseFloat(release),
-							},
-						])
+						await sendOscDynMessages(event.options.channel, 2, 'release', event.options.release);
 					}
 					if (event.options.kneeShow === true) {
-						const knee_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/knee'
-						const knee = await this.parseVariablesInString(event.options.knee)
-
-						sendOscMessage(knee_path, [
-							{
-								type: 'i',
-								value: parseInt(knee),
-							},
-						])
+						await sendOscDynMessages(event.options.channel, 2, 'knee', event.options.knee, 'i');
+					}
+					if (event.options.lpfreqShow === true) {
+						await sendOscDynMessages(event.options.channel, 2, 'crossover_low', event.options.lpfrequency);
+					}
+					if (event.options.hpfreqShow === true) {
+						await sendOscDynMessages(event.options.channel, 2, 'crossover_high', event.options.hpfrequency);
 					}
 				},
 			},
@@ -1481,7 +1427,7 @@ class OSCInstance extends InstanceBase {
 			osc_feedback_multi: {
 				type: 'boolean',
 				name: 'Listen for OSC messages (Multiple Arguments)',
-				description: 'Listen for OSC messages. Requires "Listen for Feedback" option to be enabled in OSC config.',
+				description: 'Listen for OSC messages. Requires "Listen for Feedback" option to be enabled in web config.',
 				options: [
 					{
 						type: 'textinput',
@@ -1542,7 +1488,7 @@ class OSCInstance extends InstanceBase {
 			osc_feedback_noargs: {
 				type: 'boolean',
 				name: 'Listen for OSC messages (No Arguments)',
-				description: 'Listen for OSC messages. Requires "Listen for Feedback" option to be enabled in OSC config.',
+				description: 'Listen for OSC messages. Requires "Listen for Feedback" option to be enabled in web config.',
 				options: [
 					{
 						type: 'textinput',
