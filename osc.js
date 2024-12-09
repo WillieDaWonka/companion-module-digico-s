@@ -50,7 +50,7 @@ class OSCInstance extends InstanceBase {
 		} else {
 			this.updateStatus('ok');
 		}
-		this.initVariables(); // init variables
+		//this.initVariables(); // init variables // commented ouit for dynamic variables
 		this.updateActions(); // export actions
 		this.updateFeedbacks(); // export feedback
 		
@@ -72,7 +72,7 @@ class OSCInstance extends InstanceBase {
 	}
 
 	handleIncomingChannelData(channel, data) {
-		variables.updateChannelVariables(this, channel, data);
+		variables.updateMultipleVariables(this, channel, data);
 	}
 
 	// When module gets deleted
@@ -209,6 +209,56 @@ class OSCInstance extends InstanceBase {
 			}
 		}
 
+		const sendOscEQMessagesForBands = async (channel, bands, type, value, variableType = 'f') => {
+			const parsedValue = await this.parseVariablesInString(value);
+			const mutiPaths = {};
+			for (let band of bands) {
+				const oscPath = `/channel/${channel}/eq/${band}/${type}`;
+				sendOscMessage(oscPath, [
+					{
+						type: variableType,
+						value: variableType === 'f' ? parseFloat(parsedValue) : '' + parsedValue,
+					},
+				]);
+				const varPath = `eq/${band}/${type}`;
+				mutiPaths[varPath] = parsedValue;
+				variables.getOrDefineVariable(this, channel, varPath);
+			}
+			this.handleIncomingChannelData(channel, mutiPaths);
+		}
+
+		const sendOscDynMessages = async (channel, dyn, type, value, variableType = 'f') => {
+			const parsedValue = await this.parseVariablesInString(value);
+			const oscPath = `/channel/${channel}/dyn${dyn}/${type}`;
+			sendOscMessage(oscPath, [
+				{
+					type: variableType,
+					value: variableType === 'f' ? parseFloat(parsedValue) : '' + parsedValue,
+				},
+			]);
+			const varPath = `dyn${dyn}/${type}`;
+			variables.getOrDefineVariable(this, channel, varPath);
+			
+			this.handleIncomingData(channel, varPath, parsedValue);
+		}
+		const sendOscDynMessagesForBands = async (channel, bands, dyn, type, value, variableType = 'f') => {
+			const parsedValue = await this.parseVariablesInString(value);
+			const mutiPaths = {};
+			for (let band of bands) {
+				const oscPath = `/channel/${channel}/dyn${dyn}/${band}/${type}`;
+				sendOscMessage(oscPath, [
+					{
+						type: variableType,
+						value: variableType === 'f' ? parseFloat(parsedValue) : '' + parsedValue,
+					},
+				]);
+				const varPath = `dyn${dyn}/${band}/${type}`;
+				mutiPaths[varPath] = parsedValue;
+				variables.getOrDefineVariable(this, channel, varPath);
+			}
+			this.handleIncomingChannelData(channel, mutiPaths);
+		}
+
 		this.setActionDefinitions({
 			test_eq: {
 				name: 'test eq',
@@ -224,11 +274,15 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						id:"band",
-						type: 'number',
+						type: 'multidropdown',
 						label: 'Band number 1-4',
-						default: 1,
-						min: 1,
-						max: 4,
+						choices: [
+							{ id: '1', label: '1' },
+							{ id: '2', label: '2' },
+							{ id: '3', label: '3' },
+							{ id: '4', label: '4' },
+						],
+						default: ['1','2','3','4'],
 						useVariables: true,
 					},
 					{
@@ -379,94 +433,37 @@ class OSCInstance extends InstanceBase {
 					},
 				],
 				callback: async (event) => {
+					
 					if (event.options.freqShow === true) {
-						const freq_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/frequency'
-						const freq = await this.parseVariablesInString(event.options.frequency)
-						
-						sendOscMessage(freq_path, [
-							{
-								type: 'f',
-								value: parseFloat(freq),
-							},
-						])
-						this.handleIncomingData(event.options.channel, 'eq/' + event.options.band + '/frequency', freq)
-
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'frequency', event.options.frequency);
 					}
+					
 					if (event.options.gainShow === true) {
-						const gain_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/gain'
-						const gain = await this.parseVariablesInString(event.options.gain)
-						sendOscMessage(gain_path, [
-							{
-								type: 'f',
-								value: parseFloat(gain),
-							},
-						])
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'gain', event.options.gain);
 					}
+					
 					if (event.options.qShow === true) {
-						const q_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/q'
-						const q = await this.parseVariablesInString(event.options.q)
-
-						sendOscMessage(q_path, [
-							{
-								type: 'f',
-								value: parseFloat(q),
-							},
-						])
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'q', event.options.q);
 					}
+					
 					if (event.options.dynThresholdShow === true) {
-						const threshold_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/threshold'
-						const threshold = await this.parseVariablesInString(event.options.threshold)
-
-						sendOscMessage(threshold_path, [
-							{
-								type: 'f',
-								value: parseFloat(threshold),
-							},
-						])
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/threshold', event.options.threshold);
 					}
+					
 					if (event.options.dynRatioShow === true) {
-						const ratio_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/ratio'
-						const ratio = await this.parseVariablesInString(event.options.ratio)
-
-						sendOscMessage(ratio_path, [
-							{
-								type: 'f',
-								value: parseFloat(ratio),
-							},
-						])
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/ratio', event.options.ratio);
 					}
+					
 					if (event.options.dynAttackShow === true) {
-						const attack_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/attack'
-						const attack = await this.parseVariablesInString(event.options.attack / 1000)
-
-						sendOscMessage(attack_path, [
-							{
-								type: 'f',
-								value: parseFloat(attack),
-							},
-						])
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/attack', event.options.attack / 1000);
 					}
+					
 					if (event.options.dynReleaseShow === true) {
-						const release_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/release'
-						const release = await this.parseVariablesInString(event.options.release)
-
-						sendOscMessage(release_path, [
-							{
-								type: 'f',
-								value: parseFloat(release),
-							},
-						])
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/release', event.options.release);
 					}
+					
 					if (event.options.dynEnabledShow === true) {
-					const enabled_path = '/channel/'+ event.options.channel + '/eq/' + event.options.band + '/dyn/enabled'
-					const enabled = await this.parseVariablesInString(event.options.enabled)
-
-					sendOscMessage(enabled_path, [
-						{
-							type: 's',
-							value: '' + enabled,
-						},
-					])
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/enabled', event.options.enabled, 's');
 					}
 				},
 			},
@@ -550,11 +547,14 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						id:"band",
-						type: 'number',
-						label: 'Band number 1-3',
-						default: 1,
-						min: 1,
-						max: 3,
+						type: 'multidropdown',
+						label: 'Band number 1-4',
+						choices: [
+							{ id: '1', label: '1' },
+							{ id: '2', label: '2' },
+							{ id: '3', label: '3' },
+						],
+						default: ['1','2','3'],
 						useVariables: true,
 					},
 					{
@@ -674,132 +674,37 @@ class OSCInstance extends InstanceBase {
 				],
 				callback: async (event) => {
 					if (event.options.dynShow === false) {
-						const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
-						const enabled = await this.parseVariablesInString(event.options.dynShow)
-						
-						sendOscMessage(path, [
-							{
-								type: 's',
-								value: enabled,
-							},
-						])
-						this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
-
+						await sendOscDynMessages(event.options.channel, 1, 'enabled', 'false', 's');
 					}
-						if (event.options.dynShow === true) {
-							const path = '/channel/'+ event.options.channel + '/dyn1/enabled'
-							const enabled = await this.parseVariablesInString(event.options.dynShow)
-							
-							sendOscMessage(path, [
-								{
-									type: 's',
-									value: enabled,
-								},
-							])
-							this.handleIncomingData(event.options.channel, '/dyn1/enabled', enabled)
-	
+					if (event.options.dynShow === true) {
+						await sendOscDynMessages(event.options.channel, 1, 'enabled', 'true', 's');
 					}
 					if (event.options.typeShow === true) {
-						const path = '/channel/'+ event.options.channel + '/dyn1/mode'
-						const type = await this.parseVariablesInString(event.options.type)
-
-						sendOscMessage(path, [
-							{
-								type: 'i',
-								value: parseInt(type),
-							},
-						])
+						await sendOscDynMessages(event.options.channel, 1, 'mode', event.options.type, 'i');
 					}
 					if (event.options.lpfreqShow === true) {
-						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_low'
-						const freq = await this.parseVariablesInString(event.options.lpfrequency)
-						
-						sendOscMessage(freq_path, [
-							{
-								type: 'f',
-								value: parseFloat(freq),
-							},
-						])
-						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_low', freq)
-
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'crossover_low', event.options.lpfrequency);
 					}
 					if (event.options.hpfreqShow === true) {
-						const freq_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/crossover_high'
-						const freq = await this.parseVariablesInString(event.options.hpfrequency)
-						
-						sendOscMessage(freq_path, [
-							{
-								type: 'f',
-								value: parseFloat(freq),
-							},
-						])
-						this.handleIncomingData(event.options.channel, '/dyn1/' + event.options.band + '/crossover_high', freq)
-
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'crossover_high', event.options.hpfrequency);
 					}
 					if (event.options.dynThresholdShow === true) {
-						const threshold_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/threshold'
-						const threshold = await this.parseVariablesInString(event.options.threshold)
-
-						sendOscMessage(threshold_path, [
-							{
-								type: 'f',
-								value: parseFloat(threshold),
-							},
-						])
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'dyn/threshold', event.options.threshold);
 					}
 					if (event.options.dynRatioShow === true) {
-						const ratio_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/dyn/ratio'
-						const ratio = await this.parseVariablesInString(event.options.ratio)
-
-						sendOscMessage(ratio_path, [
-							{
-								type: 'f',
-								value: parseFloat(ratio),
-							},
-						])
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'dyn/ratio', event.options.ratio);
 					}
 					if (event.options.gainShow === true) {
-						const gain_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/gain'
-						const gain = await this.parseVariablesInString(event.options.gain)
-						sendOscMessage(gain_path, [
-							{
-								type: 'f',
-								value: parseFloat(gain),
-							},
-						])
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'gain', event.options.gain);
 					}
 					if (event.options.dynAttackShow === true) {
-						const attack_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/attack'
-						const attack = await this.parseVariablesInString(event.options.attack / 1000)
-
-						sendOscMessage(attack_path, [
-							{
-								type: 'f',
-								value: parseFloat(attack),
-							},
-						])
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'attack', event.options.attack / 1000);
 					}
 					if (event.options.dynReleaseShow === true) {
-						const release_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/release'
-						const release = await this.parseVariablesInString(event.options.release / 100)
-
-						sendOscMessage(release_path, [
-							{
-								type: 'f',
-								value: parseFloat(release),
-							},
-						])
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'release', event.options.release);
 					}
 					if (event.options.kneeShow === true) {
-						const knee_path = '/channel/'+ event.options.channel + '/dyn1/' + event.options.band + '/knee'
-						const knee = await this.parseVariablesInString(event.options.knee)
-
-						sendOscMessage(knee_path, [
-							{
-								type: 'i',
-								value: parseInt(knee),
-							},
-						])
+						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'knee', event.options.knee, 'i');
 					}
 				},
 			},

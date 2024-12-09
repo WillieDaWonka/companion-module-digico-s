@@ -1,7 +1,11 @@
 module.exports = {
+
+    // current variables
+    variables: [],
+
     // Function to generate variable definitions dynamically
     getVariableDefinitions: function () {
-        const variables = [];
+        //variables = [];
         const paths = [
             'input/trim',
             'input/delay/time',
@@ -65,18 +69,39 @@ module.exports = {
                         if (path.indexOf('dyn1') !== -1 && band == 4) continue;
                         const variableId = `channel_${channel}_${path.replace('{band}', band).replace(/\//g, '_')}`;
                         const variableName = `Channel ${channel} ${path.replace('{band}', band).replace(/\//g, ' ').replace(/_/g, ' ')}`;
-                        variables.push({ variableId, name: variableName });
+                        this.variables.push({ variableId, name: variableName });
                     }
                     continue;
                 }        
                 const variableId = `channel_${channel}_${path.replace(/\//g, '_')}`;
                 const variableName = `Channel ${channel} ${path.replace(/\//g, ' ').replace(/_/g, ' ')}`;
-                variables.push({ variableId, name: variableName });
+                this.variables.push({ variableId, name: variableName });
                 
             }
         }
 
         return variables;
+    },
+
+    getOrDefineVariable: function(instance, channel, path) {
+        const variableId = `channel_${channel}_${path.replace(/\//g, '_')}`;
+        
+        //const existingDefinitions = instance.variables || [];
+        const isDefined = this.variables.some((def) => def.variableId === variableId);
+
+        if (!isDefined) {
+            const newDefinition = {
+                variableId,
+                name: `Channel ${channel} ${path.replace(/\//g, ' ').replace(/_/g, ' ')}`,
+            };
+    
+            // Combine existing definitions with the new one
+            this.variables.push(newDefinition);
+            instance.setVariableDefinitions(this.variables);
+
+        }
+
+        return variableId;
     },
 
     // Function to update variables dynamically
