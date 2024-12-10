@@ -242,6 +242,7 @@ class OSCInstance extends InstanceBase {
 			
 			this.handleIncomingData(channel, varPath, parsedValue);
 		}
+
 		const sendOscDynMessagesForBands = async (channel, bands, dyn, type, value, variableType = 'f') => {
 			const parsedValue = await this.parseVariablesInString(value);
 			const mutiPaths = {};
@@ -262,17 +263,18 @@ class OSCInstance extends InstanceBase {
 
 		this.setActionDefinitions({
 			//Word change from "test eq"
-			eq: {
-				name: 'Channel EQ',
+			inputEQ: {
+				name: 'Input Channel EQ',
 				options: [
 					{
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						default: 120,
 						min: 1,
-						max: 120,
+						max: 94,
+						default: 1,
 						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120',
 					},
 					{
 						id:"band",
@@ -284,20 +286,21 @@ class OSCInstance extends InstanceBase {
 							{ id: '3', label: '3' },
 							{ id: '4', label: '4' },
 						],
-						default: ['1','2','3','4'],
 						useVariables: true,
 					},
 					{
 						type: 'checkbox',
 						label: 'Edit Freq?',
 						id: 'freqShow',
+						width: 4,
 						default: false,
 						useVariables: true,
 					},
 					{
 						type: 'number',
-						label: 'Frequency 20 - 20000',
+						label: 'Frequency',
 						id: 'frequency',
+						width: 8,
 						default: 250,
 						min: 20,
 						max: 20000,
@@ -305,6 +308,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.freqShow === true,
+						tooltip: '20 - 20000Hz',
 					},
 					{
 						type: 'checkbox',
@@ -315,7 +319,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'gain -18 - 18',
+						label: 'EQ Gain',
 						id: 'gain',
 						default: 0,
 						min: -18,
@@ -323,6 +327,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.gainShow === true,
+						tooltip: '-18 -18dB',
 					},
 					{
 						type: 'checkbox',
@@ -333,86 +338,15 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Q 0.1 - 20',
+						label: 'EQ Band Q',
 						id: 'q',
-						default: 0.1,
+						default: 4,
 						min: 0.1,
 						max: 20,
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.qShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Dyn EQ Threshold?',
-						id: 'dynThresholdShow',
-						default: false,
-						useVariables: true,
-					},
-					{
-						type: 'number',
-						label: 'Dyn EQ Threshold -60 - 0',
-						id: 'threshold',
-						default: 0,
-						min: -60,
-						max: 0,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynThresholdShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Dyn EQ Ratio?',
-						id: 'dynRatioShow',
-						default: false,
-						useVariables: true,
-					},
-					{
-						type: 'number',
-						label: 'Dyn EQ Ratio 1 - 10',
-						id: 'ratio',
-						default: 1,
-						min: 1,
-						max: 10,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynRatioShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Dyn EQ Attack?',
-						id: 'dynAttackShow',
-						default: false,
-						useVariables: true,
-					},
-					{
-						type: 'number',
-						label: 'Dyn EQ Attack 0.5 - 100 (ms)',
-						id: 'attack',
-						default: 0.5,
-						min: 0.5,
-						max: 100,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynAttackShow === true,
-					},
-					{
-						type: 'checkbox',
-						label: 'Edit Dyn EQ Release?',
-						id: 'dynReleaseShow',
-						default: false,
-						useVariables: true,
-					},
-					{
-						type: 'number',
-						label: 'Dyn EQ Release 0.01 - 10',
-						id: 'release',
-						default: 0.01,
-						min: 0.01,
-						max: 10,
-						regex: Regex.SIGNED_FLOAT,
-						useVariables: true,
-						isVisible: (options)=>options.dynReleaseShow === true,
+						tooltip: '0.1 - 20',
 					},
 					{
 						type: 'checkbox',
@@ -433,37 +367,116 @@ class OSCInstance extends InstanceBase {
 						useVariables: true,
 						isVisible: (options)=>options.dynEnabledShow === true,
 					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Threshold?',
+						id: 'dynThresholdShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynEnabledShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Threshold',
+						id: 'threshold',
+						default: 0,
+						min: -60,
+						max: 0,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynThresholdShow === true && options.dynEnabledShow === true,
+						tooltip: '-60 - 0',
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Ratio?',
+						id: 'dynRatioShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynEnabledShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Ratio',
+						id: 'ratio',
+						default: 1,
+						min: 1,
+						max: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynRatioShow === true && options.dynEnabledShow === true,
+						tooltip: '1 -10',
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Attack?',
+						id: 'dynAttackShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynEnabledShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Attack',
+						id: 'attack',
+						default: 0.5,
+						min: 0.5,
+						max: 100,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynAttackShow === true && options.dynEnabledShow === true,
+						tooltip: '0.5 - 100ms',
+					},
+					{
+						type: 'checkbox',
+						label: 'Edit Dyn EQ Release?',
+						id: 'dynReleaseShow',
+						default: false,
+						useVariables: true,
+						isVisible: (options)=>options.dynEnabledShow === true,
+					},
+					{
+						type: 'number',
+						label: 'Dyn EQ Release',
+						id: 'release',
+						default: 0.01,
+						min: 0.01,
+						max: 10,
+						regex: Regex.SIGNED_FLOAT,
+						useVariables: true,
+						isVisible: (options)=>options.dynReleaseShow === true && options.dynEnabledShow === true,
+						tooltip: '0.01 - 10',
+					},
 				],
 				callback: async (event) => {
 					
 					if (event.options.freqShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'frequency', event.options.frequency);
-					}
-					
+					}					
 					if (event.options.gainShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'gain', event.options.gain);
-					}
-					
+					}				
 					if (event.options.qShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'q', event.options.q);
 					}
-					
+					if (event.options.enabled === false) {
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'enabled', 'false', 's');
+					}
+					if (event.options.enabled === true) {
+						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'enabled', 'true', 's');
+					}					
 					if (event.options.dynThresholdShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/threshold', event.options.threshold);
-					}
-					
+					}					
 					if (event.options.dynRatioShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/ratio', event.options.ratio);
-					}
-					
+					}					
 					if (event.options.dynAttackShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/attack', event.options.attack / 1000);
-					}
-					
+					}					
 					if (event.options.dynReleaseShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/release', event.options.release);
-					}
-					
+					}					
 					if (event.options.dynEnabledShow === true) {
 						await sendOscEQMessagesForBands(event.options.channel, event.options.band, 'dyn/enabled', event.options.enabled, 's');
 					}
@@ -478,8 +491,9 @@ class OSCInstance extends InstanceBase {
 						label: 'Refer channel number according to the OSC page of your console',
 						default: 1,
 						min: 1,
-						max: 120,
+						max: 94,
 						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120',
 					},
 					{
 						type: 'checkbox',
@@ -498,7 +512,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Type 1 - 2',
+						label: 'Dyn1 Type',
 						id: 'type',
 						default: 1,
 						min: 1,
@@ -506,6 +520,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
 						isVisible: (options)=>options.typeShow === true && options.dynShow === true,
+						tooltip: '1 / 2',
 					},
 					{
 						type: 'checkbox',
@@ -517,7 +532,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Frequency 20 - 20000',
+						label: 'Sidechain LowPass Frequency',
 						id: 'lpfrequency',
 						default: 10000,
 						min: 20,
@@ -526,6 +541,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.lpfreqShow === true && options.dynShow === true,
+						tooltip: '20 -20000Hz',
 					},
 					{
 						type: 'checkbox',
@@ -537,7 +553,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Frequency 20 - 20000',
+						label: 'Sidechain HighPass Frequency',
 						id: 'hpfrequency',
 						default: 120,
 						min: 20,
@@ -546,6 +562,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.hpfreqShow === true && options.dynShow === true,
+						tooltip: '20 -20000Hz',
 					},
 					{
 						id:"band",
@@ -558,7 +575,7 @@ class OSCInstance extends InstanceBase {
 						],
 						default: ['1','2','3'],
 						useVariables: true,
-						isVisible: (options)=>options.dynShow === true,
+						isVisible: (options)=>options.dynShow === true && options.type === 2,
 					},
 					{
 						type: 'checkbox',
@@ -570,7 +587,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Band Threshold 1 - 50',
+						label: 'Band Threshold Value',
 						id: 'threshold',
 						default: 1,
 						min: 1,
@@ -578,6 +595,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynThresholdShow === true && options.dynShow === true,
+						tooltip: '1 - 50',
 					},
 					{
 						type: 'checkbox',
@@ -589,7 +607,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Band Ratio 1 - 50',
+						label: 'Band Ratio Value',
 						id: 'ratio',
 						default: 1,
 						min: 1,
@@ -597,6 +615,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynRatioShow === true && options.dynShow === true,
+						tooltip: '1 - 50',
 					},
 					{
 						type: 'checkbox',
@@ -608,7 +627,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Band Gain 0 - 40',
+						label: 'Band Gain Value',
 						id: 'gain',
 						default: 0,
 						min: 0,
@@ -616,6 +635,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.gainShow === true,
+						tooltip: '0 - 40dB',
 					},
 					{
 						type: 'checkbox',
@@ -627,7 +647,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Band Attack 0.5 - 100 (ms)',
+						label: 'Dyn Band Attack Value',
 						id: 'attack',
 						default: 0.5,
 						min: 0.5,
@@ -635,6 +655,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynAttackShow === true && options.dynShow === true,
+						tooltip: '0.5 - 100ms',
 					},
 					{
 						type: 'checkbox',
@@ -646,7 +667,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Release 5 - 10ms',
+						label: 'Dyn Release Value',
 						id: 'release',
 						default: 0.005,
 						min: 0.005,
@@ -654,6 +675,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynReleaseShow === true && options.dynShow === true,
+						tooltip: '5 - 100ms',
 					},
 					{
 						type: 'checkbox',
@@ -665,7 +687,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Knee TBC - TBD',
+						label: 'Dyn Knee Value',
 						id: 'knee',
 						default: 1,
 						min: 1,
@@ -673,6 +695,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
 						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
+						tooltip: '1 / 2 / 3',
 					},
 				],
 				callback: async (event) => {
@@ -686,10 +709,10 @@ class OSCInstance extends InstanceBase {
 						await sendOscDynMessages(event.options.channel, 1, 'mode', event.options.type, 'i');
 					}
 					if (event.options.lpfreqShow === true) {
-						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'crossover_low', event.options.lpfrequency);
+						await sendOscDynMessages(event.options.channel, 1, 'crossover_low', event.options.lpfrequency);
 					}
 					if (event.options.hpfreqShow === true) {
-						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'crossover_high', event.options.hpfrequency);
+						await sendOscDynMessages(event.options.channel, 1, 'crossover_high', event.options.hpfrequency);
 					}
 					if (event.options.dynThresholdShow === true) {
 						await sendOscDynMessagesForBands(event.options.channel, event.options.band, 1, 'dyn/threshold', event.options.threshold);
@@ -722,8 +745,9 @@ class OSCInstance extends InstanceBase {
 						// Replaced with 1 for ease of use
 						default: 1,
 						min: 1,
-						max: 120,
+						max: 94,
 						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120',
 					},
 					{
 						type: 'checkbox',
@@ -742,7 +766,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Type 1 - 2',
+						label: 'Dyn2 Type',
 						id: 'type',
 						default: 1,
 						min: 1,
@@ -750,6 +774,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
 						isVisible: (options)=>options.typeShow === true && options.dynShow === true,
+						tooltip: '1 / 2',
 					},
 					{
 						type: 'checkbox',
@@ -761,7 +786,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Gain 0 - 40',
+						label: 'Gain Value',
 						id: 'gain',
 						default: 0,
 						min: 0,
@@ -769,6 +794,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.gainShow === true && options.dynShow === true,
+						tooltip: '0 - 40dB',
 					},
 					{
 						type: 'checkbox',
@@ -780,7 +806,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Threshold 1 - 50',
+						label: 'Threshold Value',
 						id: 'threshold',
 						default: 1,
 						min: 1,
@@ -788,6 +814,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynThresholdShow === true && options.dynShow === true,
+						tooltip: '1 - 50',
 					},
 					{
 						type: 'checkbox',
@@ -799,7 +826,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Range -90 - 0',
+						label: 'Range Value',
 						id: 'range',
 						default: 0,
 						min: -90,
@@ -807,6 +834,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynRangeShow === true && options.dynShow === true,
+						tooltip: '-90 - 0',
 					},
 					{
 						type: 'checkbox',
@@ -818,7 +846,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Ratio 1 - 50',
+						label: 'Ratio Value',
 						id: 'ratio',
 						default: 1,
 						min: 1,
@@ -826,6 +854,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynRatioShow === true && options.dynShow === true,
+						tooltip: '1 - 50',
 					},
 					{
 						type: 'checkbox',
@@ -837,14 +866,15 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Attack 0.5 - 100 (ms)',
+						label: 'Dyn Attack Value',
 						id: 'attack',
-						default: 0.5,
-						min: 0.5,
+						default: 5,
+						min: 5,
 						max: 100,
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynAttackShow === true && options.dynShow === true,
+						tooltip: '5 - 100ms',
 					},
 					{
 						type: 'checkbox',
@@ -856,14 +886,15 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Hold 2 - 2000ms (2s)',
+						label: 'Dyn Hold Value',
 						id: 'hold',
 						default: 500,
-						min: 0.002,
-						max: 2,
+						min: 2,
+						max: 2000,
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynHoldShow === true && options.dynShow === true,
+						tooltip: '2 - 2000ms',
 					},
 					{
 						type: 'checkbox',
@@ -875,14 +906,15 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Release 5 - 10ms',
+						label: 'Dyn Release Value',
 						id: 'release',
-						default: 0.005,
-						min: 0.005,
-						max: 0.1,
+						default: 5,
+						min: 5,
+						max: 100,
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.dynReleaseShow === true && options.dynShow === true,
+						tooltip: '5 - 100ms',
 					},
 					{
 						type: 'checkbox',
@@ -894,7 +926,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Dyn Knee TBC - TBD',
+						label: 'Dyn Knee Value',
 						id: 'knee',
 						default: 1,
 						min: 1,
@@ -902,6 +934,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
 						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
+						tooltip: '1 / 2 / 3',
 					},
 					{
 						type: 'checkbox',
@@ -913,7 +946,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Frequency 20 - 20000',
+						label: 'Sidechain LowPass Frequency',
 						id: 'lpfrequency',
 						default: 10000,
 						min: 20,
@@ -922,6 +955,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.lpfreqShow === true && options.dynShow === true,
+						tooltip: '20 - 20000Hz',
 					},
 					{
 						type: 'checkbox',
@@ -933,7 +967,7 @@ class OSCInstance extends InstanceBase {
 					},
 					{
 						type: 'number',
-						label: 'Frequency 20 - 20000',
+						label: 'Sidechain HighPass Frequency',
 						id: 'hpfrequency',
 						default: 120,
 						min: 20,
@@ -942,6 +976,7 @@ class OSCInstance extends InstanceBase {
 						regex: Regex.SIGNED_FLOAT,
 						useVariables: true,
 						isVisible: (options)=>options.hpfreqShow === true && options.dynShow === true,
+						tooltip: '20 - 20000Hz',
 					},
 				],
 				// Replaced '1' with '2' to reflect dyn2
@@ -971,11 +1006,10 @@ class OSCInstance extends InstanceBase {
 						await sendOscDynMessages(event.options.channel, 2, 'attack', event.options.attack / 1000);
 					}
 					if (event.options.dynHoldShow === true) {
-						// Thanks Digico for using seconds here instead of miliseconds
-						await sendOscDynMessages(event.options.channel, 2, 'hold', event.options.hold * 1000);
+						await sendOscDynMessages(event.options.channel, 2, 'hold', event.options.hold / 1000);
 					}
 					if (event.options.dynReleaseShow === true) {
-						await sendOscDynMessages(event.options.channel, 2, 'release', event.options.release);
+						await sendOscDynMessages(event.options.channel, 2, 'release', event.options.release / 1000);
 					}
 					if (event.options.kneeShow === true) {
 						await sendOscDynMessages(event.options.channel, 2, 'knee', event.options.knee, 'i');
@@ -989,16 +1023,17 @@ class OSCInstance extends InstanceBase {
 				},
 			},
 			mute_enable: {
-				name: 'Channel Mute',
+				name: 'Channel Mute/Unmute',
 				options: [
 					{
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						default: 0,
-						min: 0,
-						max: 60,
+						default: 1,
+						min: 1,
+						max: 120,
 						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120 | Matrix: 100-107 | CG: 110-119',
 					},
 					{
 						type: 'dropdown',
@@ -1007,8 +1042,8 @@ class OSCInstance extends InstanceBase {
 							{ id: 'true', label: 'Mute' },
 							{ id: 'false', label: 'Unmute' },
 						],
-						id: 'string',
-						default: 'true',
+						id: 'mute',
+						default: 'false',
 						useVariables: true,
 					},
 				],
@@ -1026,216 +1061,268 @@ class OSCInstance extends InstanceBase {
 				},
 			},
 			delay_enable: {
-				name: 'Channel Mute',
+				name: 'Channel Delay',
 				options: [
 					{
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						default: 0,
-						min: 0,
-						max: 60,
+						default: 1,
+						min: 1,
+						max: 120,
+						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120 | Matrix: 100-107 | CG: 110-119',
+					},
+					{
+						type: 'checkbox',
+						label: 'Delay Enable?',
+						id: 'enabled',
+						default: false,
 						useVariables: true,
 					},
 					{
-						type: 'dropdown',
-						label: 'Mute/Unmute',
-						choices: [
-							{ id: 'true', label: 'Mute' },
-							{ id: 'false', label: 'Unmute' },
-						],
-						id: 'string',
-						default: 'true',
+						id: 'delayValue',
+						type: 'number',
+						label: 'Delay Value',
+						default: 0,
+						min: 0,
+						max: 682,
+						isVisible: (options)=>options.enabled === true,
 						useVariables: true,
+						tooltip: '0 - 682',
 					},
 				],
 				callback: async (event) => {
-					const path = '/channel/'+ event.options.channel + '/mute'
-					//await this.parseVariablesInString(event.options.path)
-					const string = await this.parseVariablesInString(event.options.string)
-
-					sendOscMessage(path, [
-						{
-							type: 's',
-							value: '' + string,
-						},
-					])
+					if (event.options.enabled === false) {
+						const path = '/channel/'+ event.options.channel + '/delay/enabled'
+						const delayEnabled = await this.parseVariablesInString(event.options.enabled)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: delayEnabled,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/delay/enabled', delayEnabled)
+					}
+					if (event.options.enabled === true) {
+						const path = '/channel/'+ event.options.channel + '/delay/enabled'
+						const delayEnabled = await this.parseVariablesInString(event.options.enabled)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: delayEnabled,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/delay/enabled', delayEnabled)
+					}
+					if (event.options.enabled === true) {
+						const path = '/channel/'+ event.options.channel + '/delay/time'
+						const delayValue = await this.parseVariablesInString(event.options.delayValue / 1000)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: delayValue,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/delay/time', delayValue)
+					}
 				},
 			},
-			mute_enable: {
-				name: 'Channel Mute',
+			digitube: {
+				name: 'Channel DiGiTube',
 				options: [
 					{
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						default: 0,
-						min: 0,
-						max: 60,
+						default: 1,
+						min: 1,
+						max: 120,
+						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120 | Matrix: 100-107 | CG: 110-119',
+					},
+					{
+						type: 'checkbox',
+						label: 'Enable/Disable DiGiTube?',
+						id: 'digitubeShow',
+						default: false,
 						useVariables: true,
 					},
 					{
-						type: 'dropdown',
-						label: 'Mute/Unmute',
-						choices: [
-							{ id: 'true', label: 'Mute' },
-							{ id: 'false', label: 'Unmute' },
-						],
-						id: 'string',
-						default: 'true',
+						id:"bias",
+						type: 'number',
+						label: 'DiGiTube Bias',
+						default: 0,
+						min: 1,
+						max: 10,
+						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
+						isVisible: (options)=>options.digitubeShow === true,
+						tooltip: 'TBD Value',
+					},
+					{
+						id:"drive",
+						type: 'number',
+						label: 'DiGiTube Drive',
+						default: 0,
+						min: 0.5,
+						max: 50,
+						useVariables: true,
+						isVisible: (options)=>options.digitubeShow === true,
+						tooltip: '0.5-50',
 					},
 				],
 				callback: async (event) => {
-					const path = '/channel/'+ event.options.channel + '/mute'
-					//await this.parseVariablesInString(event.options.path)
-					const string = await this.parseVariablesInString(event.options.string)
-
-					sendOscMessage(path, [
-						{
-							type: 's',
-							value: '' + string,
-						},
-					])
+					if (event.options.digitubeShow === false) {
+						const path = '/channel/'+ event.options.channel + '/digitube/enabled'
+						const digitubeEnable = await this.parseVariablesInString(event.options.digitubeShow)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: digitubeEnable,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/digitube/enabled', digitubeEnable)
+					}
+					if (event.options.digitubeShow === true) {
+						const path = '/channel/'+ event.options.channel + '/digitube/enabled'
+						const digitubeEnable = await this.parseVariablesInString(event.options.digitubeShow)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: digitubeEnable,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/digitube/enabled', digitubeEnable)
+					}
+					if (event.options.digitubeShow === true) {
+						const path = '/channel/'+ event.options.channel + '/digitube/bias'
+						const value = await this.parseVariablesInString(event.options.bias)
+						
+						sendOscMessage(path, [
+							{
+								type: 'I',
+								value: value,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/digitube/enabled', value)
+					}
+					if (event.options.digitubeShow === true) {
+						const path = '/channel/'+ event.options.channel + '/digitube/drive'
+						const value = await this.parseVariablesInString(event.options.drive)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: value,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/digitube/drive', value)
+					}
 				},
 			},
-			mute_enable: {
-				name: 'Channel Mute',
+			gain: {
+				name: 'Channel Gain Control',
 				options: [
 					{
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						default: 0,
-						min: 0,
+						default: 1,
+						min: 1,
 						max: 60,
 						useVariables: true,
+						tooltip: 'Inputs: 1-60',
 					},
 					{
 						type: 'dropdown',
-						label: 'Mute/Unmute',
+						label: 'Enable/Disable Gain Tracking?',
+						id: 'trackingShow',
 						choices: [
-							{ id: 'true', label: 'Mute' },
-							{ id: 'false', label: 'Unmute' },
+							{ id: 'true', label: 'Enable' },
+							{ id: 'false', label: 'Disable' },
 						],
-						id: 'string',
-						default: 'true',
+						default: 'false',
 						useVariables: true,
 					},
-				],
-				callback: async (event) => {
-					const path = '/channel/'+ event.options.channel + '/mute'
-					//await this.parseVariablesInString(event.options.path)
-					const string = await this.parseVariablesInString(event.options.string)
-
-					sendOscMessage(path, [
-						{
-							type: 's',
-							value: '' + string,
-						},
-					])
-				},
-			},
-			mute_enable: {
-				name: 'Channel Mute',
-				options: [
 					{
-						id:"channel",
+						type: 'checkbox',
+						label: 'Adjust Gain?',
+						id: 'gainShow',
+						default: false,
+						useVariables: true,
+					},
+					{
+						id:"gain",
 						type: 'number',
-						label: 'Refer channel number according to the OSC page of your console',
+						label: 'Input Gain',
 						default: 0,
-						min: 0,
-						max: 60,
+						min: -150,
+						max: 30,
+						useVariables: true,
+						isVisible: (options)=>options.gainShow === true,
+						tooltip: '-150 - 30',
+					},
+					{
+						type: 'checkbox',
+						label: 'Adjust Input Trim?',
+						id: 'trimShow',
+						default: false,
 						useVariables: true,
 					},
 					{
-						type: 'dropdown',
-						label: 'Mute/Unmute',
-						choices: [
-							{ id: 'true', label: 'Mute' },
-							{ id: 'false', label: 'Unmute' },
-						],
-						id: 'string',
-						default: 'true',
+						id:"trim",
+						type: 'number',
+						label: 'Input Trim',
+						default: 0,
+						min: -40,
+						max: 40,
 						useVariables: true,
+						isVisible: (options)=>options.trimShow === true,
+						tooltip: '-40 - 40',
 					},
 				],
 				callback: async (event) => {
-					const path = '/channel/'+ event.options.channel + '/mute'
-					//await this.parseVariablesInString(event.options.path)
-					const string = await this.parseVariablesInString(event.options.string)
-
-					sendOscMessage(path, [
-						{
-							type: 's',
-							value: '' + string,
-						},
-					])
-				},
-			},
-			send_multiple: {
-				name: 'Send message with multiple arguments',
-				options: [
-					{
-						type: 'textinput',
-						label: 'OSC Path',
-						id: 'path',
-						default: '/osc/path',
-						useVariables: true,
-					},
-					{
-						type: 'textinput',
-						label: 'Arguments',
-						id: 'arguments',
-						default: '1 "test" 2.5',
-						useVariables: true,
-					},
-				],
-				callback: async (event) => {
-					const path = await this.parseVariablesInString(event.options.path)
-					const argsStr = await this.parseVariablesInString(event.options.arguments)
-
-					const rawArgs = (argsStr + '').replace(/“/g, '"').replace(/”/g, '"').split(' ')
-
-					if (rawArgs.length) {
-						const args = []
-						for (let i = 0; i < rawArgs.length; i++) {
-							if (rawArgs[i].length == 0) continue
-							if (isNaN(rawArgs[i])) {
-								let str = rawArgs[i]
-								if (str.startsWith('"')) {
-									//a quoted string..
-									while (!rawArgs[i].endsWith('"')) {
-										i++
-										str += ' ' + rawArgs[i]
-									}
-								} else if(str.startsWith('{')) {
-									//Probably a JSON object
-									try {
-										args.push((JSON.parse(rawArgs[i])))
-									} catch (error) {
-										this.log('error', `not a JSON object ${rawArgs[i]}`)
-									}
-								}
-
-								args.push({
-									type: 's',
-									value: str.replace(/"/g, '').replace(/'/g, ''),
-								})
-							} else if (rawArgs[i].indexOf('.') > -1) {
-								args.push({
-									type: 'f',
-									value: parseFloat(rawArgs[i]),
-								})
-							} else {
-								args.push({
-									type: 'i',
-									value: parseInt(rawArgs[i]),
-								})
-							}
-						}
-
-						sendOscMessage(path, args)
+					if (event.options.trackingShow === false) {
+						const path = '/channel/'+ event.options.channel + '/input/gain_tracking'
+						const trackingEnabled = await this.parseVariablesInString(event.options.trackingShow)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: trackingEnabled,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/input/gain_tracking', trackingEnabled)
+					}
+					if (event.options.trackingShow === true) {
+						const path = '/channel/'+ event.options.channel + '/input/gain_tracking'
+						const trackingEnabled = await this.parseVariablesInString(event.options.trackingShow)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: trackingEnabled,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/input/gain_tracking', trackingEnabled)
+					}
+					if (event.options.gainShow === true) {
+						const path = '/channel/'+ event.options.channel + '/input/gain'
+						const gainValue = await this.parseVariablesInString(event.options.gain)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: gainValue,
+							},
+						])
+						this.handleIncomingData(event.options.channel, '/input/gain', gainValue)
 					}
 				},
 			},

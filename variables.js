@@ -60,12 +60,18 @@ module.exports = {
             'dyn2/listen',
             'dyn2/lowpass',
             'dyn2/highpass',
+            'send/{send}/level',
+            'send/{send}/enabled',
+            'send/{send}/pan',
         ];
 
         for (let channel = 1; channel <= 120; channel++) {
             for (const path of paths) {
+
                 if (path.indexOf('{band}') !== -1) {
+
                     for (let band = 1; band <= 4; band++) {
+
                         if (path.indexOf('dyn1') !== -1 && band == 4) continue;
                         const variableId = `channel_${channel}_${path.replace('{band}', band).replace(/\//g, '_')}`;
                         const variableName = `Channel ${channel} ${path.replace('{band}', band).replace(/\//g, ' ').replace(/_/g, ' ')}`;

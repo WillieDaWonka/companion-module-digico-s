@@ -14,14 +14,14 @@ Channel EQ
     Band Frequency
     Band Gain
     Band Q
-    Band Dynamic Threshold
-    Band Dynamic Ratio
-    Band Dynamic Attack
-    Band Dynamic Release
-    Band Dynamic Enabled
+    Band Dynamic EQ Threshold
+    Band Dynamic EQ Ratio
+    Band Dynamic EQ Attack
+    Band Dynamic EQ Release
+    Band Dynamic EQ Enabled
 Channel Dyn1
     Enabled
-    Mode
+    Mode 
     Sidechain Lowpass Filter
     Sidechain Highpass Filter
     Threshold
