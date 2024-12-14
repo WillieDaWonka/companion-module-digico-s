@@ -36,7 +36,7 @@ class OSCInstance extends InstanceBase {
 				validate = true;
 			}
 		}
-		// Need to add "/console/ping" with no arg and await reply via sending "/console/pong" with no args -WL
+		// Need to add "/console/ping" with no arg and await reply of "/console/pong" with no args -WL
 		if (this.config.listen) {
 			if (this.targetHost && (this.config.targetPort || this.config.feedbackPort)) {
 
@@ -262,7 +262,6 @@ class OSCInstance extends InstanceBase {
 		}
 
 		this.setActionDefinitions({
-			//Word change from "test eq"
 			inputEQ: {
 				name: 'Input Channel EQ',
 				options: [
@@ -286,13 +285,13 @@ class OSCInstance extends InstanceBase {
 							{ id: '3', label: '3' },
 							{ id: '4', label: '4' },
 						],
+						maxSelection: 1,
 						useVariables: true,
 					},
 					{
 						type: 'checkbox',
 						label: 'Edit Freq?',
 						id: 'freqShow',
-						width: 4,
 						default: false,
 						useVariables: true,
 					},
@@ -300,7 +299,6 @@ class OSCInstance extends InstanceBase {
 						type: 'number',
 						label: 'Frequency',
 						id: 'frequency',
-						width: 8,
 						default: 250,
 						min: 20,
 						max: 20000,
@@ -573,7 +571,7 @@ class OSCInstance extends InstanceBase {
 							{ id: '2', label: '2' },
 							{ id: '3', label: '3' },
 						],
-						default: ['1','2','3'],
+						maxSelection: 1,
 						useVariables: true,
 						isVisible: (options)=>options.dynShow === true && options.type === 2,
 					},
@@ -686,16 +684,18 @@ class OSCInstance extends InstanceBase {
 						isVisible: (options)=>options.dynShow === true,
 					},
 					{
-						type: 'number',
+						type: 'dropdown',
 						label: 'Dyn Knee Value',
 						id: 'knee',
-						default: 1,
-						min: 1,
-						max: 3,
+						choices: [
+							{ id: '1', label: 'Soft' },
+							{ id: '2', label: 'Medium' },
+							{ id: '3', label: 'Hard' },
+						],
+						default: '1',
 						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
 						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
-						tooltip: '1 / 2 / 3',
 					},
 				],
 				callback: async (event) => {
@@ -734,7 +734,7 @@ class OSCInstance extends InstanceBase {
 					}
 				},
 			},
-			// Followed dyn1 but am unsure if syntax used is correct -WL
+			// Channel Dynamics 2
 			dyn2: {
 				name: 'Channel Dynamics 2',
 				options: [
@@ -742,7 +742,6 @@ class OSCInstance extends InstanceBase {
 						id:"channel",
 						type: 'number',
 						label: 'Refer channel number according to the OSC page of your console',
-						// Replaced with 1 for ease of use
 						default: 1,
 						min: 1,
 						max: 94,
@@ -925,16 +924,18 @@ class OSCInstance extends InstanceBase {
 						isVisible: (options)=>options.dynShow === true,
 					},
 					{
-						type: 'number',
+						type: 'dropdown',
 						label: 'Dyn Knee Value',
 						id: 'knee',
 						default: 1,
-						min: 1,
-						max: 3,
+						choices: [
+							{ id: '1', label: 'Soft' },
+							{ id: '2', label: 'Medium' },
+							{ id: '3', label: 'Hard' },
+						],
 						regex: Regex.SIGNED_NUMBER,
 						useVariables: true,
 						isVisible: (options)=>options.kneeShow === true && options.dynShow === true,
-						tooltip: '1 / 2 / 3',
 					},
 					{
 						type: 'checkbox',
@@ -979,7 +980,6 @@ class OSCInstance extends InstanceBase {
 						tooltip: '20 - 20000Hz',
 					},
 				],
-				// Replaced '1' with '2' to reflect dyn2
 				callback: async (event) => {
 					if (event.options.dynShow === false) {
 						await sendOscDynMessages(event.options.channel, 2, 'enabled', 'false', 's');
@@ -1323,6 +1323,277 @@ class OSCInstance extends InstanceBase {
 							},
 						])
 						this.handleIncomingData(event.options.channel, '/input/gain', gainValue)
+					}
+				},
+			},
+			name: {
+				name: 'Channel Name',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 1,
+						min: 1,
+						max: 120,
+						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120 | Matrix: 100-107 | CG: 110-119',
+					},
+					{
+						type: 'textinput',
+						label: 'Channel Name',
+						id: 'name',
+						useVariables: true,
+						minIsNegativeInfinity: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/input/name'
+					const name = await this.parseVariablesInString(event.options.name)
+
+					sendOscMessage(path, [
+						{
+							type: 's',
+							value: '' + name,
+						},
+					])
+				},
+			},
+			fader: {
+				name: 'Channel Fader',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 1,
+						min: 1,
+						max: 120,
+						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120 | Matrix: 100-107 | CG: 110-119',
+					},
+					{
+						type: 'number',
+						label: 'Fader Value',
+						id: 'fader',
+						range: true,
+						min: -150,
+						max: 10,
+						step: 0.1,
+						default: '0',
+						useVariables: true,
+						minIsNegativeInfinity: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/input/fader'
+					const fader = await this.parseVariablesInString(event.options.fader)
+
+					sendOscMessage(path, [
+						{
+							type: 'f',
+							value: parseFloat(fader),
+						},
+					])
+				},
+			},
+			pan: {
+				name: 'Channel Pan',
+				options: [
+					{
+						id:"channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 1,
+						min: 1,
+						max: 120,
+						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120 | Matrix: 100-107 | CG: 110-119',
+					},
+					{
+						type: 'number',
+						label: 'Pan Value',
+						id: 'pan',
+						range: true,
+						min: -10,
+						max: 10,
+						default: '0',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/pan'
+					const pan = await this.parseVariablesInString(event.options.pan / 10)
+
+					sendOscMessage(path, [
+						{
+							type: 'f',
+							value: parseFloat(pan),
+						},
+					])
+				},
+			},
+			width: {
+				name: 'Channel Mono/Stereo',
+				options: [
+					{
+						id: "channel",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 1,
+						min: 1,
+						max: 120,
+						useVariables: true,
+						tooltip: 'Inputs: 1-60 | Aux/Groups: 70-94 | Master: 120 | Matrix: 100-107 | CG: 110-119',
+					},
+					{
+						type: 'dropdown',
+						label: 'Mono/Stereo',
+						id: 'width',
+						choices: [
+							{ id: '-1', label: 'Mono' },
+							{ id: '1', label: 'Stereo' },
+						],
+						default: 'mono',
+						useVariables: true,
+					},
+				],
+				callback: async (event) => {
+					const path = '/channel/'+ event.options.channel + '/input/width'
+					const width = await this.parseVariablesInString(event.options.width)
+
+					sendOscMessage(path, [
+						{
+							type: 'f',
+							value: parseFloat(width),
+						},
+					])
+				},
+			},
+			outputassign: {
+				name: 'Aux/Group/CG Assign',
+				options: [
+					{
+						id: "input",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 1,
+						min: 1,
+						max: 60,
+						useVariables: true,
+						tooltip: 'Inputs: 1-60',
+					},
+					{
+						id: "output",
+						type: 'number',
+						label: 'Refer channel number according to the OSC page of your console',
+						default: 70,
+						min: 70,
+						max: 120,
+						useVariables: true,
+						tooltip: 'Aux/Groups: 70-94 | Master: 120 | CG: 110-119',
+					},
+					{
+						id: "enabled",
+						type: 'dropdown',
+						label: 'Enable/Disable Send',
+						choices: [
+							{ id: 'true', label: 'Enable' },
+							{ id: 'false', label: 'Disable' },
+						],
+						default: 'false',
+						useVariables: true,
+					},
+					{
+						id: "levelshow",
+						type: 'checkbox',
+						label: 'Adjust Send Level?',
+						default: false,
+						useVariables: true,
+						isVisible:  (options)=>options.enabled === 'true',
+					},
+					{
+						type: 'number',
+						label: 'Send Value',
+						id: 'level',
+						range: true,
+						min: -90,
+						max: 10,
+						step: 0.1,
+						default: '0',
+						useVariables: true,
+						isVisible:  (options)=>options.enabled === 'true' && options.levelshow === true,
+					},
+					{
+						id: "panshow",
+						type: 'checkbox',
+						label: 'Adjust Send Pan?',
+						default: false,
+						useVariables: true,
+						isVisible:  (options)=>options.enabled === 'true',
+					},
+					{
+						type: 'number',
+						label: 'Pan Value',
+						id: 'pan',
+						range: true,
+						min: -10,
+						max: 10,
+						default: '0',
+						useVariables: true,
+						isVisible:  (options)=>options.enabled === 'true' && options.panshow === true,
+					},
+				],
+				callback: async (event) => {
+					if (event.options.enabled === false) {
+						const path = '/channel/' + event.options.input + '/send/' + event.options.output + '/enabled'
+						const enabled = await this.parseVariablesInString(event.options.enabled)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: enabled,
+							},
+						])
+					}
+				},
+				callback: async (event) => {
+					if (event.options.enabled === true) {
+						const path = '/channel/' + event.options.input + '/send/' + event.options.output + '/enabled'
+						const enabled = await this.parseVariablesInString(event.options.enabled)
+						
+						sendOscMessage(path, [
+							{
+								type: 's',
+								value: enabled,
+							},
+						])
+					}
+				},
+				callback: async (event) => {
+					if (event.options.levelshow === true) {
+						const path = '/channel/' + event.options.input + '/send/' + event.options.output + '/level'
+						const level = await this.parseVariablesInString(event.options.level)
+						
+						sendOscMessage(path, [
+							{
+								type: 'f',
+								value: parseFloat(level),
+							},
+						])
+					}
+				},
+				callback: async (event) => {
+					if (event.options.panshow === true) {
+						const path = '/channel/' + event.options.input + '/send/' + event.options.output + '/pan'
+						const pan = await this.parseVariablesInString(event.options.pan / 10)
+						
+						sendOscMessage(path, [
+							{
+								type: 'f',
+								value: parseFloat(pan),
+							},
+						])
 					}
 				},
 			},
