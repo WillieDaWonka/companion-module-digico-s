@@ -1,6 +1,12 @@
-node_modules
-/pkg
-/pkg.tgz
+node_modules/
+pkg/
+*.tgz
 .DS_Store
-.package.lock
-.nvmrc
+*.log
+
+# Local Claude Code session config - not module content
+.claude/
+
+# Source spreadsheet the parameter table was transcribed from - not published
+# unless explicitly asked to include it.
+*.xlsx
