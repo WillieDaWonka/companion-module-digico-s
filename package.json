@@ -1,23 +1,28 @@
 {
-	"name": "Digico_S-Series",
-	"version": "2.4.1",
-	"main": "osc.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"format": "prettier -w ."
-	},
+	"name": "companion-module-digico-s-series",
+	"version": "1.0.0",
+	"type": "module",
+	"main": "src/main.js",
 	"license": "MIT",
+	"description": "Bitfocus Companion module for DiGiCo S-Series consoles (S21 / S31) using the native OSC External Control protocol",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/WillieDaWonka/companion-module-digico-s.git"
+		"url": "git+https://github.com/bitfocus/companion-module-digico-s-series.git"
+	},
+	"engines": {
+		"node": "^22.20"
+	},
+	"scripts": {
+		"format": "prettier -w .",
+		"package": "companion-module-build",
+		"test": "node --test test/"
 	},
 	"dependencies": {
-		"@companion-module/base": "^1.11.0",
-		"osc": "^2.4.4",
-		"osc-js": "^2.4.1"
+		"@companion-module/base": "^2.1.2"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^2.1.0"
+		"@companion-module/tools": "^3.0.1",
+		"prettier": "^3.8.3"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json"
 }

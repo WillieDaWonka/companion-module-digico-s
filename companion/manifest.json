@@ -1,29 +1,27 @@
 {
-	"id": "digico-s",
-	"name": "digico-s",
-	"shortname": "digico_s",
-	"description": "Updated Digico S-Series module for Companion",
-	"version": "0.0.0",
+	"id": "digico-s-series",
+	"name": "digico-s-series",
+	"shortname": "S-Series",
+	"description": "DiGiCo S-Series (S21 / S31) native OSC control",
+	"version": "1.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/WillieDaWonka/companion-module-digico-s.git",
-	"bugs": "https://github.com/WillieDaWonka/companion-module-digico-s/issues",
+	"repository": "https://github.com/bitfocus/companion-module-digico-s-series",
+	"bugs": "https://github.com/bitfocus/companion-module-digico-s-series/issues",
 	"maintainers": [
 		{
-			"name": "William Loo",
-			"email": "williaml@harrythehirer.com.au",
-			
-			"name": "George Haviaridis",
-			"email": "sample@sample.com"
+			"name": "Ilumina",
+			"email": "willsound96khz@gmail.com"
 		}
 	],
-	"legacyIds": ["generic-osc"],
+	"legacyIds": [],
+	"type": "connection",
 	"runtime": {
-		"type": "node18",
+		"type": "node22",
 		"api": "nodejs-ipc",
-		"apiVersion": "0.0.0",
-		"entrypoint": "../osc.js"
+		"apiVersion": "2.1.2",
+		"entrypoint": "../src/main.js"
 	},
-	"manufacturer": "Digico",
-	"products": ["S Series"],
-	"keywords": ["Digico", "Audio", "Console", "AV", "OSC"]
+	"manufacturer": "DiGiCo",
+	"products": ["S21", "S31"],
+	"keywords": ["Audio", "Mixer", "OSC", "DiGiCo", "S21", "S31", "S-Series"]
 }
